@@ -4,19 +4,16 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>FinançasPro - Gestão Financeira & Uber</title>
-    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- FontAwesome -->
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <!-- Chart.js -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <!-- Supabase -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
     <script>
         tailwind.config = {
             darkMode: 'class',
             theme: {
                 extend: {
+                    fontFamily: { sans: ['"Plus Jakarta Sans"', 'sans-serif'] },
                     colors: {
                         uber: '#2563eb',
                         darkBg: '#0f172a',
@@ -26,284 +23,492 @@
             }
         }
     </script>
+    <style>
+        body { font-family: 'Plus Jakarta Sans', sans-serif; }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+        .dark ::-webkit-scrollbar-thumb { background: #475569; }
+    </style>
 </head>
-<body class="bg-slate-50 text-slate-800 dark:bg-darkBg dark:text-slate-200 transition-colors duration-200 flex h-screen overflow-hidden">
-    
+<body class="bg-slate-50 text-slate-800 dark:bg-darkBg dark:text-slate-100 transition-colors duration-200 flex h-screen overflow-hidden">
+
     <!-- Sidebar -->
-    <aside class="w-64 bg-white dark:bg-darkCard border-r border-slate-200 dark:border-slate-700 flex flex-col transition-colors z-10 hidden md:flex">
-        <div class="p-6 flex items-center justify-between">
-            <div class="flex items-center gap-3">
-                <div class="w-10 h-10 bg-emerald-500 rounded-xl flex items-center justify-center text-white font-bold shadow-lg">
-                    <i class="fa-solid fa-dollar-sign"></i>
+    <aside id="sidebar" class="w-64 bg-white dark:bg-darkCard border-r border-slate-200 dark:border-slate-700/80 flex flex-col justify-between transition-all z-30 fixed md:static inset-y-0 left-0 -translate-x-full md:translate-x-0">
+        <div>
+            <div class="p-5 flex items-center justify-between border-b border-slate-100 dark:border-slate-700/50">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 bg-emerald-500 rounded-xl flex items-center justify-center text-white font-bold shadow-md shadow-emerald-500/20">
+                        <i class="fa-solid fa-wallet text-lg"></i>
+                    </div>
+                    <div>
+                        <h1 class="font-extrabold text-lg leading-tight tracking-tight">Finanças<span class="text-emerald-500">Pro</span></h1>
+                        <span class="text-[11px] text-slate-400 font-medium flex items-center gap-1">
+                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Sincronizado
+                        </span>
+                    </div>
                 </div>
-                <div>
-                    <h1 class="font-bold text-lg leading-tight">Finanças<span class="text-emerald-500">Pro</span></h1>
-                </div>
+                <button id="themeToggle" class="w-9 h-9 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-300 hover:text-amber-500 flex items-center justify-center transition-colors" title="Alternar Tema">
+                    <i class="fa-solid fa-moon" id="themeIcon"></i>
+                </button>
             </div>
-            <button id="themeToggle" class="p-2 text-slate-400 hover:text-amber-500 transition-colors">
-                <i class="fa-solid fa-moon text-xl" id="themeIcon"></i>
-            </button>
+
+            <div class="p-4 space-y-2">
+                <button onclick="openTransactionModal()" class="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-semibold py-2.5 px-4 rounded-xl shadow-md shadow-emerald-500/20 transition-all flex items-center justify-center gap-2 text-sm">
+                    <i class="fa-solid fa-plus"></i> Novo Lançamento
+                </button>
+                <button onclick="openUberModal()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-xl shadow-sm transition-all flex items-center justify-center gap-2 text-xs">
+                    <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24"><path d="M18.92 6.01C18.72 5.42 18.16 5 17.5 5H6.5c-.66 0-1.22.42-1.42 1.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99zM6.85 7h10.29l1.08 3.11H5.77L6.85 7zM19 17H5v-5h14v5z"/><circle cx="7.5" cy="14.5" r="1.5"/><circle cx="16.5" cy="14.5" r="1.5"/></svg>
+                    Registrar Turno Uber
+                </button>
+            </div>
+
+            <nav class="px-3 space-y-1">
+                <a href="#" onclick="switchTab('dashboard'); return false;" id="nav-dashboard" class="nav-item flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all">
+                    <i class="fa-solid fa-chart-pie w-5 text-center"></i> Dashboard Geral
+                </a>
+                <a href="#" onclick="switchTab('transactions'); return false;" id="nav-transactions" class="nav-item flex items-center justify-between px-4 py-3 rounded-xl text-sm font-semibold transition-all">
+                    <span class="flex items-center gap-3"><i class="fa-solid fa-list-check w-5 text-center"></i> Lançamentos</span>
+                    <span id="badge-tx-count" class="text-[11px] px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">169</span>
+                </a>
+                <a href="#" onclick="switchTab('uber'); return false;" id="nav-uber" class="nav-item flex items-center justify-between px-4 py-3 rounded-xl text-sm font-semibold transition-all">
+                    <span class="flex items-center gap-3">
+                        <svg class="w-5 h-5 fill-current text-blue-600 dark:text-blue-400" viewBox="0 0 24 24"><path d="M18.92 6.01C18.72 5.42 18.16 5 17.5 5H6.5c-.66 0-1.22.42-1.42 1.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99zM6.85 7h10.29l1.08 3.11H5.77L6.85 7zM19 17H5v-5h14v5z"/><circle cx="7.5" cy="14.5" r="1.5"/><circle cx="16.5" cy="14.5" r="1.5"/></svg>
+                        Uber
+                    </span>
+                    <span id="badge-uber-count" class="text-[11px] px-2 py-0.5 rounded-full bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300">18</span>
+                </a>
+            </nav>
         </div>
 
-        <div class="px-4 mb-6">
-            <button onclick="openModal('transactionModal')" class="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-semibold py-3 px-4 rounded-xl shadow-md transition-all flex items-center justify-center gap-2">
-                <i class="fa-solid fa-plus"></i> Novo Lançamento
+        <div class="p-4 border-t border-slate-100 dark:border-slate-700/50 space-y-2">
+            <button onclick="exportCSV()" class="w-full py-2 px-3 rounded-lg text-xs font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center justify-center gap-2 transition-colors">
+                <i class="fa-solid fa-download"></i> Exportar Dados CSV
+            </button>
+            <button onclick="resetDefaultData()" class="w-full py-1.5 px-3 rounded-lg text-[11px] text-slate-400 hover:text-rose-500 flex items-center justify-center gap-1 transition-colors">
+                <i class="fa-solid fa-rotate-left"></i> Restaurar Base Original
             </button>
         </div>
-
-        <nav class="flex-1 px-4 space-y-2 overflow-y-auto">
-            <a href="#" onclick="switchTab('dashboard')" class="nav-item flex items-center gap-3 px-4 py-3 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors" id="nav-dashboard">
-                <i class="fa-solid fa-border-all w-5"></i> Dashboard
-            </a>
-            <a href="#" onclick="switchTab('transactions')" class="nav-item flex items-center gap-3 px-4 py-3 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors" id="nav-transactions">
-                <i class="fa-solid fa-arrow-right-arrow-left w-5"></i> Lançamentos
-            </a>
-            <a href="#" onclick="switchTab('uber')" class="nav-item flex items-center gap-3 px-4 py-3 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors" id="nav-uber">
-                <svg class="w-5 h-5 fill-current" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M18.92 6.01C18.72 5.42 18.16 5 17.5 5H6.5c-.66 0-1.22.42-1.42 1.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99zM6.85 7h10.29l1.08 3.11H5.77L6.85 7zM19 17H5v-5h14v5z"/>
-                    <circle cx="7.5" cy="14.5" r="1.5"/>
-                    <circle cx="16.5" cy="14.5" r="1.5"/>
-                </svg>
-                Uber
-            </a>
-        </nav>
     </aside>
 
     <!-- Main Content -->
     <main class="flex-1 flex flex-col overflow-hidden">
-        <header class="md:hidden bg-white dark:bg-darkCard border-b border-slate-200 dark:border-slate-700 p-4 flex justify-between items-center">
-            <div class="flex items-center gap-2">
-                <div class="w-8 h-8 bg-emerald-500 rounded-lg flex items-center justify-center text-white font-bold">
-                    <i class="fa-solid fa-dollar-sign text-sm"></i>
+        <!-- Top Header -->
+        <header class="bg-white dark:bg-darkCard border-b border-slate-200 dark:border-slate-700/80 px-6 py-3.5 flex flex-wrap items-center justify-between gap-4">
+            <div class="flex items-center gap-3">
+                <button onclick="toggleSidebar()" class="md:hidden text-slate-600 dark:text-slate-300 text-xl p-1">
+                    <i class="fa-solid fa-bars"></i>
+                </button>
+                <div>
+                    <h2 id="pageTitle" class="font-bold text-lg text-slate-800 dark:text-white">Dashboard Geral</h2>
+                    <p id="pageSubtitle" class="text-xs text-slate-400">Visão consolidada das suas finanças e metas</p>
                 </div>
-                <h1 class="font-bold">Finanças<span class="text-emerald-500">Pro</span></h1>
             </div>
-            <button class="text-slate-600 dark:text-slate-300 text-xl"><i class="fa-solid fa-bars"></i></button>
+
+            <div class="flex items-center gap-3">
+                <div class="flex items-center bg-slate-100 dark:bg-slate-800 rounded-xl p-1 border border-slate-200 dark:border-slate-700">
+                    <i class="fa-regular fa-calendar text-slate-400 pl-3 pr-2 text-sm"></i>
+                    <select id="globalMonthFilter" onchange="refreshAllViews()" class="bg-transparent text-sm font-semibold text-slate-700 dark:text-slate-200 pr-3 py-1.5 outline-none cursor-pointer">
+                        <option value="all">Todo o Período</option>
+                        <option value="2026-08">Agosto / 2026</option>
+                        <option value="2026-09">Setembro / 2026</option>
+                        <option value="2026-10" selected>Outubro / 2026</option>
+                        <option value="2026-11">Novembro / 2026 (Proj.)</option>
+                        <option value="2026-12">Dezembro / 2026 (Proj.)</option>
+                        <option value="2027">Ano 2027 (Futuro)</option>
+                    </select>
+                </div>
+            </div>
         </header>
 
-        <div class="flex-1 overflow-y-auto p-6 lg:p-10" id="mainContent">
-            
-            <!-- Dashboard Tab -->
-            <div id="tab-dashboard" class="tab-content hidden">
-                <h2 class="text-2xl font-bold mb-6">Dashboard Geral</h2>
-                
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                    <div class="bg-white dark:bg-darkCard p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm">
-                        <h3 class="text-slate-500 dark:text-slate-400 text-sm font-medium mb-2">Saldo Atual</h3>
-                        <p class="text-3xl font-bold text-slate-800 dark:text-white" id="dash-saldo">R$ 0,00</p>
+        <!-- Dynamic Content Container -->
+        <div class="flex-1 overflow-y-auto p-6 space-y-6">
+
+            <!-- ================= ABA 1: DASHBOARD ================= -->
+            <div id="tab-dashboard" class="tab-content space-y-6">
+                <!-- KPIs -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+                    <div class="bg-white dark:bg-darkCard p-5 rounded-2xl border border-slate-200/80 dark:border-slate-700 shadow-sm">
+                        <div class="flex items-center justify-between mb-3">
+                            <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Saldo do Período</span>
+                            <div class="w-9 h-9 rounded-xl bg-emerald-50 dark:bg-emerald-900/20 text-emerald-500 flex items-center justify-center"><i class="fa-solid fa-scale-balanced"></i></div>
+                        </div>
+                        <p id="dash-saldo" class="text-2xl font-extrabold text-slate-800 dark:text-white">R$ 0,00</p>
+                        <p id="dash-saldo-sub" class="text-xs text-slate-400 mt-1">Balanço líquido</p>
                     </div>
-                    <div class="bg-white dark:bg-darkCard p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm">
-                        <h3 class="text-slate-500 dark:text-slate-400 text-sm font-medium mb-2">Receitas (Mês)</h3>
-                        <p class="text-3xl font-bold text-emerald-500" id="dash-receitas">R$ 0,00</p>
+
+                    <div class="bg-white dark:bg-darkCard p-5 rounded-2xl border border-slate-200/80 dark:border-slate-700 shadow-sm">
+                        <div class="flex items-center justify-between mb-3">
+                            <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Receitas</span>
+                            <div class="w-9 h-9 rounded-xl bg-emerald-50 dark:bg-emerald-900/20 text-emerald-500 flex items-center justify-center"><i class="fa-solid fa-arrow-trend-up"></i></div>
+                        </div>
+                        <p id="dash-receitas" class="text-2xl font-extrabold text-emerald-500">R$ 0,00</p>
+                        <p id="dash-receitas-count" class="text-xs text-slate-400 mt-1">0 entradas registradas</p>
                     </div>
-                    <div class="bg-white dark:bg-darkCard p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm">
-                        <h3 class="text-slate-500 dark:text-slate-400 text-sm font-medium mb-2">Despesas (Mês)</h3>
-                        <p class="text-3xl font-bold text-rose-500" id="dash-despesas">R$ 0,00</p>
+
+                    <div class="bg-white dark:bg-darkCard p-5 rounded-2xl border border-slate-200/80 dark:border-slate-700 shadow-sm">
+                        <div class="flex items-center justify-between mb-3">
+                            <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Despesas</span>
+                            <div class="w-9 h-9 rounded-xl bg-rose-50 dark:bg-rose-900/20 text-rose-500 flex items-center justify-center"><i class="fa-solid fa-arrow-trend-down"></i></div>
+                        </div>
+                        <p id="dash-despesas" class="text-2xl font-extrabold text-rose-500">R$ 0,00</p>
+                        <p id="dash-despesas-count" class="text-xs text-slate-400 mt-1">0 saídas registradas</p>
+                    </div>
+
+                    <div class="bg-white dark:bg-darkCard p-5 rounded-2xl border border-slate-200/80 dark:border-slate-700 shadow-sm">
+                        <div class="flex items-center justify-between mb-3">
+                            <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Lucro Líquido Uber</span>
+                            <div class="w-9 h-9 rounded-xl bg-blue-50 dark:bg-blue-900/20 text-blue-600 flex items-center justify-center">
+                                <svg class="w-5 h-5 fill-current" viewBox="0 0 24 24"><path d="M18.92 6.01C18.72 5.42 18.16 5 17.5 5H6.5c-.66 0-1.22.42-1.42 1.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99zM6.85 7h10.29l1.08 3.11H5.77L6.85 7zM19 17H5v-5h14v5z"/><circle cx="7.5" cy="14.5" r="1.5"/><circle cx="16.5" cy="14.5" r="1.5"/></svg>
+                            </div>
+                        </div>
+                        <p id="dash-uber" class="text-2xl font-extrabold text-blue-600 dark:text-blue-400">R$ 0,00</p>
+                        <p id="dash-uber-sub" class="text-xs text-slate-400 mt-1">0 turnos no período</p>
                     </div>
                 </div>
 
-                <div class="bg-white dark:bg-darkCard p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm mb-8">
-                    <h3 class="text-lg font-bold mb-4">Projeção 30/60/90 Dias</h3>
-                    <div class="relative h-64 w-full">
-                        <canvas id="projectionChart"></canvas>
+                <!-- Charts Row 1 -->
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div class="lg:col-span-2 bg-white dark:bg-darkCard p-6 rounded-2xl border border-slate-200/80 dark:border-slate-700 shadow-sm">
+                        <div class="flex items-center justify-between mb-4">
+                            <div>
+                                <h3 class="font-bold text-base">Fluxo de Caixa Mensal</h3>
+                                <p class="text-xs text-slate-400">Comparativo histórico de Receitas vs Despesas</p>
+                            </div>
+                        </div>
+                        <div class="h-64"><canvas id="cashflowChart"></canvas></div>
+                    </div>
+
+                    <div class="bg-white dark:bg-darkCard p-6 rounded-2xl border border-slate-200/80 dark:border-slate-700 shadow-sm">
+                        <div class="mb-4">
+                            <h3 class="font-bold text-base">Despesas por Categoria</h3>
+                            <p class="text-xs text-slate-400">Distribuição no período selecionado</p>
+                        </div>
+                        <div class="h-64 flex items-center justify-center"><canvas id="categoryChart"></canvas></div>
+                    </div>
+                </div>
+
+                <!-- Charts Row 2: Motor Preditivo 30/60/90d -->
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div class="bg-white dark:bg-darkCard p-6 rounded-2xl border border-slate-200/80 dark:border-slate-700 shadow-sm">
+                        <div class="mb-4">
+                            <span class="text-[11px] font-bold uppercase px-2.5 py-1 rounded-full bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">Motor Preditivo</span>
+                            <h3 class="font-bold text-base mt-2">Projeção de Parcelas (30/60/90d)</h3>
+                            <p class="text-xs text-slate-400">Compromissos futuros agendados na base</p>
+                        </div>
+                        <div id="predictiveCards" class="space-y-3"></div>
+                    </div>
+
+                    <div class="lg:col-span-2 bg-white dark:bg-darkCard p-6 rounded-2xl border border-slate-200/80 dark:border-slate-700 shadow-sm">
+                        <div class="mb-4">
+                            <h3 class="font-bold text-base">Curva de Liquidez Projetada (Nov/26 a Jan/27)</h3>
+                            <p class="text-xs text-slate-400">Simulação com base na recorrência salarial + parcelas pendentes</p>
+                        </div>
+                        <div class="h-56"><canvas id="projectionChart"></canvas></div>
                     </div>
                 </div>
             </div>
 
-            <!-- Transactions Tab -->
-            <div id="tab-transactions" class="tab-content hidden">
-                <div class="flex justify-between items-center mb-6">
-                    <h2 class="text-2xl font-bold">Lançamentos</h2>
-                    <button onclick="openModal('transactionModal')" class="md:hidden bg-emerald-500 text-white px-4 py-2 rounded-lg text-sm font-medium">
-                        <i class="fa-solid fa-plus mr-1"></i> Novo
-                    </button>
-                </div>
-                <div class="bg-white dark:bg-darkCard rounded-2xl border border-slate-200 dark:border-slate-700 overflow-hidden shadow-sm">
-                    <div class="p-4 border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 flex gap-2 overflow-x-auto">
-                        <select id="filterType" class="bg-white dark:bg-darkBg border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-1.5 text-sm outline-none" onchange="renderTransactions()">
-                            <option value="all">Todas as Movimentações</option>
-                            <option value="receita">Apenas Receitas</option>
-                            <option value="despesa">Apenas Despesas</option>
-                        </select>
-                        <select id="filterCategory" class="bg-white dark:bg-darkBg border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-1.5 text-sm outline-none" onchange="renderTransactions()">
+            <!-- ================= ABA 2: LANÇAMENTOS ================= -->
+            <div id="tab-transactions" class="tab-content hidden space-y-5">
+                <!-- Filtros Avançados -->
+                <div class="bg-white dark:bg-darkCard p-4 rounded-2xl border border-slate-200/80 dark:border-slate-700 shadow-sm space-y-4">
+                    <div class="flex flex-wrap items-center justify-between gap-3">
+                        <div class="flex flex-wrap gap-1.5" id="txStatusTabs">
+                            <button onclick="setTxQuickFilter('all')" data-filter="all" class="tx-tab-btn px-3.5 py-1.5 rounded-xl text-xs font-bold bg-emerald-500 text-white">Todas</button>
+                            <button onclick="setTxQuickFilter('receita')" data-filter="receita" class="tx-tab-btn px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">Receitas</button>
+                            <button onclick="setTxQuickFilter('despesa')" data-filter="despesa" class="tx-tab-btn px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">Despesas</button>
+                            <button onclick="setTxQuickFilter('pago')" data-filter="pago" class="tx-tab-btn px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">Pagas</button>
+                            <button onclick="setTxQuickFilter('pendente')" data-filter="pendente" class="tx-tab-btn px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">Pendentes (Futuras)</button>
+                        </div>
+                        <div class="text-xs font-semibold text-slate-500" id="txFilteredSummary">Exibindo 0 registros</div>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                        <div class="relative">
+                            <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-3 text-slate-400 text-xs"></i>
+                            <input type="text" id="txSearch" oninput="renderTransactions()" placeholder="Buscar descrição..." class="w-full pl-9 pr-3 py-2 bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 rounded-xl text-xs outline-none focus:border-emerald-500">
+                        </div>
+                        <select id="txCategoryFilter" onchange="onFilterCategoryChange()" class="bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs outline-none">
                             <option value="all">Todas as Categorias</option>
-                            <!-- Options preenchidas no JS -->
+                        </select>
+                        <select id="txSubcategoryFilter" onchange="renderTransactions()" class="bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs outline-none">
+                            <option value="all">Todas as Subcategorias</option>
+                        </select>
+                        <select id="txAccountFilter" onchange="renderTransactions()" class="bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs outline-none">
+                            <option value="all">Todas as Contas / Meios</option>
                         </select>
                     </div>
-                    <div class="overflow-x-auto">
-                        <table class="w-full text-left text-sm">
-                            <thead class="bg-slate-50 dark:bg-slate-800/50 text-slate-500 dark:text-slate-400">
+                </div>
+
+                <!-- Tabela de Lançamentos -->
+                <div class="bg-white dark:bg-darkCard rounded-2xl border border-slate-200/80 dark:border-slate-700 overflow-hidden shadow-sm">
+                    <div class="overflow-x-auto max-h-[62vh]">
+                        <table class="w-full text-left text-xs">
+                            <thead class="bg-slate-50 dark:bg-slate-800/90 text-slate-500 dark:text-slate-400 sticky top-0 z-10 border-b border-slate-200 dark:border-slate-700">
                                 <tr>
-                                    <th class="px-6 py-4 font-medium">Data</th>
-                                    <th class="px-6 py-4 font-medium">Descrição</th>
-                                    <th class="px-6 py-4 font-medium">Categoria</th>
-                                    <th class="px-6 py-4 font-medium">Conta</th>
-                                    <th class="px-6 py-4 font-medium text-right">Valor</th>
-                                    <th class="px-6 py-4 font-medium text-center">Status</th>
+                                    <th class="px-4 py-3.5 font-semibold">Data</th>
+                                    <th class="px-4 py-3.5 font-semibold">Descrição</th>
+                                    <th class="px-4 py-3.5 font-semibold">Categoria & Subcategoria</th>
+                                    <th class="px-4 py-3.5 font-semibold">Conta / Forma</th>
+                                    <th class="px-4 py-3.5 font-semibold text-right">Valor</th>
+                                    <th class="px-4 py-3.5 font-semibold text-center">Status</th>
+                                    <th class="px-4 py-3.5 font-semibold text-center">Ações</th>
                                 </tr>
                             </thead>
-                            <tbody id="transactionsList" class="divide-y divide-slate-200 dark:divide-slate-700">
-                                <!-- Lançamentos injetados aqui -->
-                            </tbody>
+                            <tbody id="transactionsList" class="divide-y divide-slate-100 dark:divide-slate-800"></tbody>
                         </table>
                     </div>
                 </div>
             </div>
 
-            <!-- Uber Tab -->
-            <div id="tab-uber" class="tab-content hidden">
-                <div class="max-w-5xl mx-auto">
-                    <div class="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
+            <!-- ================= ABA 3: UBER ================= -->
+            <div id="tab-uber" class="tab-content hidden space-y-6">
+                <!-- Header Uber -->
+                <div class="bg-white dark:bg-darkCard p-5 rounded-2xl border border-slate-200/80 dark:border-slate-700 shadow-sm flex flex-wrap items-center justify-between gap-4">
+                    <div class="flex items-center gap-3">
+                        <div class="w-12 h-12 rounded-2xl bg-blue-600 text-white flex items-center justify-center shadow-lg shadow-blue-600/25">
+                            <svg class="w-7 h-7 fill-current" viewBox="0 0 24 24"><path d="M18.92 6.01C18.72 5.42 18.16 5 17.5 5H6.5c-.66 0-1.22.42-1.42 1.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99zM6.85 7h10.29l1.08 3.11H5.77L6.85 7zM19 17H5v-5h14v5z"/><circle cx="7.5" cy="14.5" r="1.5"/><circle cx="16.5" cy="14.5" r="1.5"/></svg>
+                        </div>
                         <div>
-                            <h2 class="text-2xl font-bold mb-1 flex items-center gap-2">
-                                <svg class="w-6 h-6 text-blue-600" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" fill="currentColor">
-                                    <path d="M18.92 6.01C18.72 5.42 18.16 5 17.5 5H6.5c-.66 0-1.22.42-1.42 1.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99zM6.85 7h10.29l1.08 3.11H5.77L6.85 7zM19 17H5v-5h14v5z"/>
-                                    <circle cx="7.5" cy="14.5" r="1.5"/>
-                                    <circle cx="16.5" cy="14.5" r="1.5"/>
-                                </svg>
-                                Uber
-                            </h2>
-                            <p class="text-slate-500 dark:text-slate-400">Resumo Operacional e Indicadores</p>
-                        </div>
-                    </div>
-                    
-                    <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-                        <div class="bg-white dark:bg-darkCard p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm">
-                            <h3 class="text-slate-500 dark:text-slate-400 text-sm font-medium mb-2">Total Líquido</h3>
-                            <p class="text-3xl font-bold text-emerald-500" id="uber-liquido">R$ 0,00</p>
-                            <p class="text-xs text-slate-400 mt-2" id="uber-margem">Margem: --</p>
-                        </div>
-                        <div class="bg-white dark:bg-darkCard p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm">
-                            <h3 class="text-slate-500 dark:text-slate-400 text-sm font-medium mb-2">Rend. Médio/Hora</h3>
-                            <p class="text-3xl font-bold text-blue-500" id="uber-hora">R$ 0,00/h</p>
-                            <p class="text-xs text-slate-400 mt-2" id="uber-tempo">0 horas online</p>
-                        </div>
-                        <div class="bg-white dark:bg-darkCard p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm">
-                            <h3 class="text-slate-500 dark:text-slate-400 text-sm font-medium mb-2">Custo Combustível</h3>
-                            <p class="text-3xl font-bold text-rose-500" id="uber-combustivel">R$ 0,00</p>
-                            <p class="text-xs text-slate-400 mt-2" id="uber-consumo">Média -- km/L</p>
-                        </div>
-                        <div class="bg-white dark:bg-darkCard p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm">
-                            <h3 class="text-slate-500 dark:text-slate-400 text-sm font-medium mb-2">Total KM</h3>
-                            <p class="text-3xl font-bold text-amber-500" id="uber-km">0 km</p>
-                            <p class="text-xs text-slate-400 mt-2" id="uber-viagens">0 viagens</p>
+                            <h2 class="text-xl font-extrabold flex items-center gap-2">Uber</h2>
+                            <p class="text-xs text-slate-400">Controle operacional de turnos, combustível, manutenção e lucro líquido</p>
                         </div>
                     </div>
 
-                    <div class="bg-white dark:bg-darkCard rounded-2xl border border-slate-200 dark:border-slate-700 overflow-hidden shadow-sm">
-                        <div class="overflow-x-auto">
-                            <table class="w-full text-left text-sm">
-                                <thead class="bg-slate-50 dark:bg-slate-800/50 text-slate-500 dark:text-slate-400">
-                                    <tr>
-                                        <th class="px-6 py-4 font-medium">Data</th>
-                                        <th class="px-6 py-4 font-medium">Bruto</th>
-                                        <th class="px-6 py-4 font-medium">KM</th>
-                                        <th class="px-6 py-4 font-medium">Combustível</th>
-                                        <th class="px-6 py-4 font-medium text-right">Líquido</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="uberList" class="divide-y divide-slate-200 dark:divide-slate-700">
-                                    <!-- Turnos Uber injetados aqui -->
-                                </tbody>
-                            </table>
+                    <div class="flex items-center gap-2">
+                        <div class="bg-slate-100 dark:bg-slate-800 p-1 rounded-xl flex text-xs font-semibold">
+                            <button id="uberFilterAllBtn" onclick="setUberScope('all')" class="px-3 py-1.5 rounded-lg bg-blue-600 text-white transition-all">Todos (18)</button>
+                            <button id="uberFilterMonthBtn" onclick="setUberScope('month')" class="px-3 py-1.5 rounded-lg text-slate-600 dark:text-slate-300 transition-all">Mês Selecionado</button>
                         </div>
+                        <button onclick="openUberModal()" class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold px-4 py-2.5 rounded-xl shadow-sm flex items-center gap-1.5">
+                            <i class="fa-solid fa-plus"></i> Novo Turno
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 4 KPIs Uber -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+                    <div class="bg-white dark:bg-darkCard p-5 rounded-2xl border border-slate-200/80 dark:border-slate-700 shadow-sm">
+                        <span class="text-xs font-semibold text-slate-400">Lucro Líquido Real</span>
+                        <p id="uber-kpi-liquido" class="text-2xl font-extrabold text-emerald-500 mt-1">R$ 815,22</p>
+                        <p id="uber-kpi-margem" class="text-[11px] text-slate-400 mt-1">Margem de 74,3% (Bruto: R$ 1.097,70)</p>
+                    </div>
+                    <div class="bg-white dark:bg-darkCard p-5 rounded-2xl border border-slate-200/80 dark:border-slate-700 shadow-sm">
+                        <span class="text-xs font-semibold text-slate-400">Ganho Líquido / Hora</span>
+                        <p id="uber-kpi-hora" class="text-2xl font-extrabold text-blue-600 dark:text-blue-400 mt-1">R$ 31,54/h</p>
+                        <p id="uber-kpi-tempo" class="text-[11px] text-slate-400 mt-1">25,9h online (1.551 min)</p>
+                    </div>
+                    <div class="bg-white dark:bg-darkCard p-5 rounded-2xl border border-slate-200/80 dark:border-slate-700 shadow-sm">
+                        <span class="text-xs font-semibold text-slate-400">Custo Combustível</span>
+                        <p id="uber-kpi-combustivel" class="text-2xl font-extrabold text-rose-500 mt-1">R$ 258,48</p>
+                        <p id="uber-kpi-consumo" class="text-[11px] text-slate-400 mt-1">Média 7,6 km/L | R$ 3,45/L</p>
+                    </div>
+                    <div class="bg-white dark:bg-darkCard p-5 rounded-2xl border border-slate-200/80 dark:border-slate-700 shadow-sm">
+                        <span class="text-xs font-semibold text-slate-400">Rodagem & Eficiência</span>
+                        <p id="uber-kpi-km" class="text-2xl font-extrabold text-amber-500 mt-1">569,3 km</p>
+                        <p id="uber-kpi-viagens" class="text-[11px] text-slate-400 mt-1">114 viagens | R$ 1,43 líq/km</p>
+                    </div>
+                </div>
+
+                <!-- Gráficos Uber -->
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div class="lg:col-span-2 bg-white dark:bg-darkCard p-5 rounded-2xl border border-slate-200/80 dark:border-slate-700 shadow-sm">
+                        <h3 class="font-bold text-sm mb-1">Performance por Turno (Receita Bruta vs Lucro Líquido vs Combustível)</h3>
+                        <p class="text-xs text-slate-400 mb-4">Histórico cronológico dos turnos realizados</p>
+                        <div class="h-60"><canvas id="uberShiftsChart"></canvas></div>
+                    </div>
+                    <div class="bg-white dark:bg-darkCard p-5 rounded-2xl border border-slate-200/80 dark:border-slate-700 shadow-sm">
+                        <h3 class="font-bold text-sm mb-1">Composição da Receita Bruta</h3>
+                        <p class="text-xs text-slate-400 mb-4">Para onde vai cada real faturado</p>
+                        <div class="h-60 flex items-center justify-center"><canvas id="uberBreakdownChart"></canvas></div>
+                    </div>
+                </div>
+
+                <!-- Tabela Completa dos 18 Turnos -->
+                <div class="bg-white dark:bg-darkCard rounded-2xl border border-slate-200/80 dark:border-slate-700 overflow-hidden shadow-sm">
+                    <div class="p-4 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center">
+                        <h3 class="font-bold text-sm">Histórico Detalhado de Turnos</h3>
+                        <span id="uberTableSubtitle" class="text-xs text-slate-400">18 turnos registrados</span>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-xs">
+                            <thead class="bg-slate-50 dark:bg-slate-800/80 text-slate-500 dark:text-slate-400 border-b border-slate-200 dark:border-slate-700">
+                                <tr>
+                                    <th class="px-3.5 py-3 font-semibold">Data</th>
+                                    <th class="px-3.5 py-3 font-semibold text-center">Viagens</th>
+                                    <th class="px-3.5 py-3 font-semibold text-center">Tempo</th>
+                                    <th class="px-3.5 py-3 font-semibold text-right">Bruto</th>
+                                    <th class="px-3.5 py-3 font-semibold text-right">KM</th>
+                                    <th class="px-3.5 py-3 font-semibold text-center">Consumo</th>
+                                    <th class="px-3.5 py-3 font-semibold text-right">Comb. (R$/L)</th>
+                                    <th class="px-3.5 py-3 font-semibold text-right">Gasto Comb.</th>
+                                    <th class="px-3.5 py-3 font-semibold text-right">Manut. + Seg (1,6%)</th>
+                                    <th class="px-3.5 py-3 font-semibold text-right">Líquido</th>
+                                    <th class="px-3.5 py-3 font-semibold text-right">R$/h</th>
+                                </tr>
+                            </thead>
+                            <tbody id="uberList" class="divide-y divide-slate-100 dark:divide-slate-800"></tbody>
+                        </table>
                     </div>
                 </div>
             </div>
+
         </div>
     </main>
 
-    <!-- Modal Novo Lançamento -->
-    <div id="transactionModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
-        <div class="bg-white dark:bg-darkCard w-full max-w-lg rounded-2xl shadow-xl p-6 border border-slate-200 dark:border-slate-700 max-h-[90vh] overflow-y-auto">
-            <div class="flex justify-between items-center mb-6">
-                <h3 class="text-xl font-bold">Novo Lançamento</h3>
-                <button onclick="closeModal('transactionModal')" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
-                    <i class="fa-solid fa-xmark text-xl"></i>
-                </button>
+    <!-- ================= MODAL 1: NOVO LANÇAMENTO FINANCEIRO ================= -->
+    <div id="transactionModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white dark:bg-darkCard w-full max-w-lg rounded-2xl shadow-2xl p-6 border border-slate-200 dark:border-slate-700 max-h-[92vh] overflow-y-auto">
+            <div class="flex justify-between items-center mb-5">
+                <h3 class="text-lg font-extrabold">Novo Lançamento Financeiro</h3>
+                <button onclick="closeModal('transactionModal')" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
             </div>
-            
-            <form id="transactionForm" class="space-y-5">
-                <div class="grid grid-cols-2 gap-4">
-                    <button type="button" class="type-btn active py-2.5 rounded-xl border-2 border-rose-500 bg-rose-50 dark:bg-rose-900/20 text-rose-600 font-medium transition-colors" data-type="expense">
-                        <i class="fa-solid fa-arrow-down mr-2"></i>Despesa
+
+            <form id="transactionForm" onsubmit="saveTransaction(event)" class="space-y-4">
+                <!-- Tipo: Despesa vs Receita -->
+                <div class="grid grid-cols-2 gap-3">
+                    <button type="button" id="btnTypeExpense" onclick="setModalTxType('despesa')" class="py-2.5 rounded-xl border-2 border-rose-500 bg-rose-50 dark:bg-rose-900/20 text-rose-600 font-bold text-xs flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-arrow-down"></i> Saída / Despesa
                     </button>
-                    <button type="button" class="type-btn py-2.5 rounded-xl border-2 border-transparent bg-slate-100 dark:bg-slate-800 text-slate-500 font-medium hover:bg-slate-200 transition-colors" data-type="income">
-                        <i class="fa-solid fa-arrow-up mr-2"></i>Receita
+                    <button type="button" id="btnTypeIncome" onclick="setModalTxType('receita')" class="py-2.5 rounded-xl border-2 border-transparent bg-slate-100 dark:bg-slate-800 text-slate-500 font-bold text-xs flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-arrow-up"></i> Entrada / Receita
                     </button>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-500 mb-1">Valor (R$)</label>
+                        <input type="number" step="0.01" id="txValor" required placeholder="0,00" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-base font-extrabold outline-none focus:border-emerald-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-500 mb-1">Data</label>
+                        <input type="date" id="txData" required class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-xs font-semibold outline-none focus:border-emerald-500">
+                    </div>
                 </div>
 
                 <div>
-                    <label class="block text-sm font-medium text-slate-500 dark:text-slate-400 mb-1">Valor</label>
-                    <input type="number" step="0.01" id="txValor" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 text-lg font-bold outline-none focus:border-emerald-500 transition-colors" placeholder="0.00" required>
+                    <label class="block text-xs font-semibold text-slate-500 mb-1">Descrição</label>
+                    <input type="text" id="txDescricao" required placeholder="Ex: Supermercado, Condomínio, Salário..." class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-xs outline-none focus:border-emerald-500">
                 </div>
 
-                <div>
-                    <label class="block text-sm font-medium text-slate-500 dark:text-slate-400 mb-1">Descrição</label>
-                    <input type="text" id="txDescricao" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 outline-none focus:border-emerald-500 transition-colors" placeholder="Ex: Conta de Luz" required>
-                </div>
-
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <!-- Duas Abas/Campos Encadeados: Categoria (Coluna E) e Subcategoria (Coluna F) -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200/70 dark:border-slate-700">
                     <div>
-                        <label class="block text-sm font-medium text-slate-500 dark:text-slate-400 mb-1">Categoria (Aba 1)</label>
-                        <select id="categoriaSelect" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 outline-none focus:border-emerald-500 transition-colors appearance-none" required onchange="updateSubcategories()">
-                            <option value="">Selecione...</option>
-                            <option value="Moradia">Moradia</option>
-                            <option value="Carro">Carro</option>
-                            <option value="Transporte">Transporte</option>
-                            <option value="Alimentação">Alimentação</option>
-                            <option value="Eletrônicos">Eletrônicos</option>
-                            <option value="Serviços">Serviços</option>
-                            <option value="Saúde">Saúde</option>
-                            <option value="Educação">Educação</option>
-                            <option value="Pessoais">Pessoais</option>
-                            <option value="Lazer">Lazer</option>
-                            <option value="Financeiro">Financeiro</option>
-                            <option value="Pets">Pets</option>
-                            <option value="Família">Família</option>
-                            <option value="Crédito">Crédito</option>
-                            <option value="Presentes">Presentes</option>
-                            <option value="Documentação">Documentação</option>
-                            <option value="Salário">Salário</option>
-                            <option value="Renda extra">Renda extra</option>
-                            <option value="Benefícios">Benefícios</option>
-                            <option value="Outros">Outros</option>
-                        </select>
+                        <label class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">1. Categoria</label>
+                        <select id="categoriaSelect" required onchange="updateSubcategories()" class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2.5 text-xs font-semibold outline-none focus:border-emerald-500"></select>
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-slate-500 dark:text-slate-400 mb-1">Sub-categoria (Aba 2)</label>
-                        <select id="subcategoriaSelect" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 outline-none focus:border-emerald-500 transition-colors appearance-none disabled:opacity-50 disabled:cursor-not-allowed" disabled required>
-                            <option value="">Escolha a categoria primeiro</option>
-                        </select>
+                        <label class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">2. Subcategoria</label>
+                        <select id="subcategoriaSelect" required class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2.5 text-xs font-semibold outline-none focus:border-emerald-500"></select>
                     </div>
                 </div>
 
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
                     <div>
-                        <label class="block text-sm font-medium text-slate-500 dark:text-slate-400 mb-1">Data</label>
-                        <input type="date" id="txData" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 outline-none focus:border-emerald-500" required>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-slate-500 dark:text-slate-400 mb-1">Conta / Cartão</label>
-                        <select id="txConta" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 outline-none focus:border-emerald-500">
+                        <label class="block text-xs font-semibold text-slate-500 mb-1">Conta</label>
+                        <select id="txConta" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs outline-none">
                             <option value="Itaú">Itaú</option>
                             <option value="C6 Bank">C6 Bank</option>
-                            <option value="Uber">Uber</option>
+                            <option value="Nubank">Nubank</option>
                             <option value="Amazon">Amazon</option>
-                            <option value="Conta Corrente">Conta Corrente</option>
+                            <option value="Uber">Uber</option>
+                            <option value="Pix">Pix</option>
+                            <option value="Transferência bancária">Transferência</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-500 mb-1">Forma Pagto</label>
+                        <select id="txForma" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs outline-none">
+                            <option value="Itaú - Crédito">Itaú - Crédito</option>
+                            <option value="Itaú - Pix">Itaú - Pix</option>
+                            <option value="C6 Bank - Crédito">C6 Bank - Crédito</option>
+                            <option value="Nubank - Crédito">Nubank - Crédito</option>
+                            <option value="Amazon - Crédito">Amazon - Crédito</option>
+                            <option value="Pix">Pix</option>
+                            <option value="Transferência bancária">Transferência</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-500 mb-1">Status</label>
+                        <select id="txStatus" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs outline-none">
+                            <option value="pago">Pago / Recebido</option>
+                            <option value="pendente">Pendente (Futuro)</option>
                         </select>
                     </div>
                 </div>
-                
-                <button type="button" class="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-3 px-4 rounded-xl shadow-md transition-colors mt-2" onclick="saveTransaction()">
+
+                <button type="submit" class="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-3 rounded-xl shadow-md transition-colors text-sm">
                     Salvar Lançamento
                 </button>
             </form>
         </div>
     </div>
+
+    <!-- ================= MODAL 2: NOVO TURNO UBER ================= -->
+    <div id="uberModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white dark:bg-darkCard w-full max-w-lg rounded-2xl shadow-2xl p-6 border border-slate-200 dark:border-slate-700">
+            <div class="flex justify-between items-center mb-5">
+                <h3 class="text-lg font-extrabold flex items-center gap-2 text-blue-600">
+                    <svg class="w-5 h-5 fill-current" viewBox="0 0 24 24"><path d="M18.92 6.01C18.72 5.42 18.16 5 17.5 5H6.5c-.66 0-1.22.42-1.42 1.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99zM6.85 7h10.29l1.08 3.11H5.77L6.85 7zM19 17H5v-5h14v5z"/><circle cx="7.5" cy="14.5" r="1.5"/><circle cx="16.5" cy="14.5" r="1.5"/></svg>
+                    Registrar Turno Uber
+                </h3>
+                <button onclick="closeModal('uberModal')" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+
+            <form id="uberForm" onsubmit="saveUberShift(event)" class="space-y-4 text-xs">
+                <div class="grid grid-cols-3 gap-3">
+                    <div>
+                        <label class="block font-semibold text-slate-500 mb-1">Data</label>
+                        <input type="date" id="ubData" required class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2">
+                    </div>
+                    <div>
+                        <label class="block font-semibold text-slate-500 mb-1">Viagens</label>
+                        <input type="number" id="ubViagens" required placeholder="7" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2">
+                    </div>
+                    <div>
+                        <label class="block font-semibold text-slate-500 mb-1">Minutos Online</label>
+                        <input type="number" id="ubMinutos" required placeholder="90" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block font-semibold text-slate-500 mb-1">Receita Bruta (R$)</label>
+                        <input type="number" step="0.01" id="ubBruto" required placeholder="65.00" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 font-bold">
+                    </div>
+                    <div>
+                        <label class="block font-semibold text-slate-500 mb-1">KM Rodados</label>
+                        <input type="number" step="0.1" id="ubKm" required placeholder="32.0" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-3 gap-3">
+                    <div>
+                        <label class="block font-semibold text-slate-500 mb-1">Consumo (km/L)</label>
+                        <input type="number" step="0.1" id="ubConsumo" required value="7.6" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2">
+                    </div>
+                    <div>
+                        <label class="block font-semibold text-slate-500 mb-1">Combustível (R$/L)</label>
+                        <input type="number" step="0.01" id="ubPrecoComb" required value="3.50" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2">
+                    </div>
+                    <div>
+                        <label class="block font-semibold text-slate-500 mb-1">Reserva Manut. (R$)</label>
+                        <input type="number" step="0.01" id="ubManut" value="0" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2">
+                    </div>
+                </div>
+
+                <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl shadow-md transition-colors text-sm">
+                    Salvar Turno Uber
+                </button>
+            </form>
+        </div>
+    </div>
     <script>
-        // --- MAPEAMENTO DE CATEGORIAS E SUBCATEGORIAS ---
-        const subcategoriasMap = {
+        // ============================================================================
+        // 1. ÁRVORE EXATA DA PLANILHA "Controle de gastos -2026" (Colunas E e F)
+        // ============================================================================
+        const expenseCategoriesMap = {
             "Moradia": ["Condomínio 🔒", "Energia elétrica 💡", "Água e esgoto 💦", "Gás 🔥", "Internet e telefone 🌐", "Manutenção e reparos 🔧", "Pequenas reformas 🛠️", "Utensílios de cozinha 🍽️", "Móveis e decoração 🛋️", "Enxoval de casa 🛏️", "Hidráulica 🚿", "Evolução de obra 🏗️", "Financiamento 🏦", "Seguro residencial 🏦"],
             "Carro": ["Combustível ⛽", "Manutenção corretiva 🔧", "Limpeza e hienização 🧽", "Manutenção preventiva 🛠️", "Seguro auto 🛡️", "IPVA / Licenciamento 📄"],
             "Transporte": ["Transporte por aplicativo 🚕", "Transporte público 🚌", "Estacionamento e pedágio 🅿️"],
@@ -320,239 +525,777 @@
             "Crédito": ["Empréstimo de limite 💳", "Pix crédito 📲"],
             "Presentes": ["Amigos 🎁"],
             "Documentação": ["Documentos pessoais 📄", "Outros 🗂️"],
-            "Salário": ["Salário mensal 💰", "Adiantamento 💸"],
-            "Renda extra": ["Uber 🚕", "Vendas 📦", "Outros 🔄"],
-            "Benefícios": ["Vale alimentação 🍔", "Vale refeição 🍽️", "Vale transporte 🚌"],
             "Outros": ["Outros 📦"]
         };
 
-        // --- DADOS REAIS: 18 TURNOS UBER (Out/2026) ---
-        const uberShifts = [
-            { data: "2026-08-31", bruto: 65.0, km: 24.0, combustivel: 11.65, liquido: 44.51, minutos: 60, viagens: 3, consumo: 6.8 },
-            { data: "2026-09-03", bruto: 66.88, km: 36.0, combustivel: 15.63, liquido: 50.18, minutos: 102, viagens: 7, consumo: 7.6 },
-            { data: "2026-09-08", bruto: 54.64, km: 37.0, combustivel: 14.89, liquido: 38.88, minutos: 68, viagens: 4, consumo: 8.2 },
-            { data: "2026-09-11", bruto: 66.56, km: 34.0, combustivel: 15.21, liquido: 50.29, minutos: 100, viagens: 9, consumo: 7.6 },
-            { data: "2026-09-15", bruto: 48.9, km: 28.0, combustivel: 13.41, liquido: 34.71, minutos: 84, viagens: 6, consumo: 7.1 },
-            { data: "2026-09-18", bruto: 63.66, km: 35.0, combustivel: 15.66, liquido: 46.98, minutos: 96, viagens: 6, consumo: 7.6 },
-            { data: "2026-09-21", bruto: 57.07, km: 32.0, combustivel: 14.32, liquido: 41.84, minutos: 94, viagens: 7, consumo: 7.6 },
-            { data: "2026-09-22", bruto: 60.24, km: 37.0, combustivel: 18.26, liquido: 41.02, minutos: 94, viagens: 6, consumo: 7.8 },
-            { data: "2026-09-23", bruto: 63.38, km: 33.5, combustivel: 17.2, liquido: 45.17, minutos: 97, viagens: 7, consumo: 7.5 },
-            { data: "2026-09-24", bruto: 88.87, km: 45.0, combustivel: 19.41, liquido: 68.04, minutos: 126, viagens: 10, consumo: 8.0 },
-            { data: "2026-09-29", bruto: 67.28, km: 36.0, combustivel: 15.3, liquido: 50.9, minutos: 102, viagens: 7, consumo: 8.0 },
-            { data: "2026-09-30", bruto: 65.4, km: 39.0, combustivel: 15.17, liquido: 49.18, minutos: 85, viagens: 7, consumo: 9.0 },
-            { data: "2026-10-06", bruto: 50.39, km: 26.0, combustivel: 11.79, liquido: 37.79, minutos: 71, viagens: 6, consumo: 7.5 },
-            { data: "2026-10-07", bruto: 61.52, km: 25.5, combustivel: 11.26, liquido: 49.28, minutos: 70, viagens: 6, consumo: 7.7 },
-            { data: "2026-10-08", bruto: 65.68, km: 26.0, combustivel: 13.6, liquido: 51.03, minutos: 88, viagens: 7, consumo: 6.5 },
-            { data: "2026-10-09", bruto: 54.8, km: 20.0, combustivel: 9.71, liquido: 44.21, minutos: 60, viagens: 4, consumo: 7.0 },
-            { data: "2026-10-19", bruto: 37.78, km: 23.3, combustivel: 10.32, liquido: 26.86, minutos: 64, viagens: 5, consumo: 7.9 },
-            { data: "2026-10-20", bruto: 59.65, km: 32.0, combustivel: 14.36, liquido: 44.34, minutos: 90, viagens: 7, consumo: 7.8 }
+        const incomeCategoriesMap = {
+            "Salário": ["Salário mensal 💰", "Adiantamento 💸", "13º Salário 🎄"],
+            "Renda extra": ["Uber — lucro líquido 🚕", "Vendas / Serviços 📦"],
+            "Benefícios": ["Vale alimentação 🛒", "PIS / Abono 🏦"],
+            "Reembolso": ["Reembolso geral 🔄"],
+            "Outros": ["Outros ganhos 📦"]
+        };
+
+        // Inferência automática de Subcategoria com Emoji para os 169 itens vindos do CSV
+        function inferSubcategory(cat, desc, tipo) {
+            const d = (desc || '').toLowerCase();
+            if (tipo === 'receita') {
+                if (d.includes('uber')) return 'Uber — lucro líquido 🚕';
+                if (d.includes('vale')) return 'Vale alimentação 🛒';
+                if (d.includes('pis')) return 'PIS / Abono 🏦';
+                if (cat === 'Reembolso' || d.includes('reembolso')) return 'Reembolso geral 🔄';
+                if (cat === 'Salário') return 'Salário mensal 💰';
+                return 'Outros ganhos 📦';
+            }
+            if (cat === 'Moradia') {
+                if (d.includes('condom')) return 'Condomínio 🔒';
+                if (d.includes('energia')) return 'Energia elétrica 💡';
+                if (d.includes('gás') || d.includes('gas')) return 'Gás 🔥';
+                if (d.includes('vivo') || d.includes('internet')) return 'Internet e telefone 🌐';
+                return 'Manutenção e reparos 🔧';
+            }
+            if (cat === 'Carro') {
+                if (d.includes('etanol') || d.includes('combust')) return 'Combustível ⛽';
+                if (d.includes('seguro')) return 'Seguro auto 🛡️';
+                if (d.includes('ipva')) return 'IPVA / Licenciamento 📄';
+                return 'Manutenção corretiva 🔧';
+            }
+            if (cat === 'Alimentação') {
+                if (d.includes('dispesa') || d.includes('mercado')) return 'Supermercado 🛒';
+                if (d.includes('pão') || d.includes('requeij')) return 'Padaria 🥖';
+                if (d.includes('chocolate') || d.includes('doc') || d.includes('sorvete') || d.includes('carolina') || d.includes('trufa') || d.includes('brigadeiro') || d.includes('bolo') || d.includes('brownie') || d.includes('açaí') || d.includes('snickers') || d.includes('kinder') || d.includes('cokies') || d.includes('casquinha') || d.includes('colosso')) return 'Doces 🍫';
+                return 'Restaurantes / Lanches 🍔';
+            }
+            if (cat === 'Eletrônicos') {
+                if (d.includes('fogão')) return 'Eletrodomésticos 🧊';
+                if (d.includes('monitor') || d.includes('memoria')) return 'Informática 💻';
+                return 'Acessórios 🎧';
+            }
+            if (cat === 'Serviços') {
+                if (d.includes('icloud')) return 'Serviços de nuvem ☁️';
+                return 'Assinaturas 🔗';
+            }
+            if (cat === 'Pessoais') {
+                if (d.includes('tenis')) return 'Calçados 👟';
+                return 'Vestuário 👕';
+            }
+            if (cat === 'Pets') return 'Ração 🐶';
+            if (cat === 'Financeiro') {
+                if (d.includes('taxa')) return 'Tarifas bancárias 💸';
+                if (d.includes('emprest')) return 'Empréstimos 💰';
+                return 'Parcelamentos 🧾';
+            }
+            if (cat === 'Lazer') {
+                if (d.includes('bebida')) return 'Bebidas / drinks 🍻';
+                if (d.includes('churrasco')) return 'Confraternização 🍽️';
+                return 'Passeios 🌳';
+            }
+            if (cat === 'Família') return 'Presentes 🎁';
+            if (cat === 'Presentes') return 'Amigos 🎁';
+            return (expenseCategoriesMap[cat] && expenseCategoriesMap[cat][0]) || 'Outros 📦';
+        }
+
+        // ============================================================================
+        // 2. BASE DE DADOS COMPLETA: 18 TURNOS UBER + 169 TRANSAÇÕES
+        // ============================================================================
+        const defaultUberShifts = [
+            {data:"2026-08-31",viagens:3,minutos:60,bruto:65.0,extra:0,km:24.0,consumo:6.8,precoComb:3.3,custoComb:11.65,manut:7.8,seguro:1.04,liquido:44.51},
+            {data:"2026-09-03",viagens:7,minutos:102,bruto:66.88,extra:0,km:36.0,consumo:7.6,precoComb:3.3,custoComb:15.63,manut:0,seguro:1.07,liquido:50.18},
+            {data:"2026-09-08",viagens:4,minutos:68,bruto:54.64,extra:0,km:37.0,consumo:8.2,precoComb:3.3,custoComb:14.89,manut:0,seguro:0.87,liquido:38.88},
+            {data:"2026-09-11",viagens:9,minutos:100,bruto:66.56,extra:0,km:34.0,consumo:7.6,precoComb:3.4,custoComb:15.21,manut:0,seguro:1.06,liquido:50.29},
+            {data:"2026-09-15",viagens:6,minutos:84,bruto:48.9,extra:0,km:28.0,consumo:7.1,precoComb:3.4,custoComb:13.41,manut:0,seguro:0.78,liquido:34.71},
+            {data:"2026-09-18",viagens:6,minutos:96,bruto:63.66,extra:0,km:35.0,consumo:7.6,precoComb:3.4,custoComb:15.66,manut:0,seguro:1.02,liquido:46.98},
+            {data:"2026-09-21",viagens:7,minutos:94,bruto:57.07,extra:0,km:32.0,consumo:7.6,precoComb:3.4,custoComb:14.32,manut:0,seguro:0.91,liquido:41.84},
+            {data:"2026-09-22",viagens:6,minutos:94,bruto:60.24,extra:0,km:37.0,consumo:7.8,precoComb:3.85,custoComb:18.26,manut:0,seguro:0.96,liquido:41.02},
+            {data:"2026-09-23",viagens:7,minutos:97,bruto:63.38,extra:0,km:33.5,consumo:7.5,precoComb:3.85,custoComb:17.2,manut:0,seguro:1.01,liquido:45.17},
+            {data:"2026-09-24",viagens:10,minutos:126,bruto:88.87,extra:0,km:45.0,consumo:8.0,precoComb:3.45,custoComb:19.41,manut:0,seguro:1.42,liquido:68.04},
+            {data:"2026-09-29",viagens:7,minutos:102,bruto:67.28,extra:0,km:36.0,consumo:8.0,precoComb:3.4,custoComb:15.3,manut:0,seguro:1.08,liquido:50.9},
+            {data:"2026-09-30",viagens:7,minutos:85,bruto:65.4,extra:0,km:39.0,consumo:9.0,precoComb:3.5,custoComb:15.17,manut:0,seguro:1.05,liquido:49.18},
+            {data:"2026-10-06",viagens:6,minutos:71,bruto:50.39,extra:0,km:26.0,consumo:7.5,precoComb:3.4,custoComb:11.79,manut:0,seguro:0.81,liquido:37.79},
+            {data:"2026-10-07",viagens:6,minutos:70,bruto:61.52,extra:0,km:25.5,consumo:7.7,precoComb:3.4,custoComb:11.26,manut:0,seguro:0.98,liquido:49.28},
+            {data:"2026-10-08",viagens:7,minutos:88,bruto:65.68,extra:0,km:26.0,consumo:6.5,precoComb:3.4,custoComb:13.6,manut:0,seguro:1.05,liquido:51.03},
+            {data:"2026-10-09",viagens:4,minutos:60,bruto:54.8,extra:0,km:20.0,consumo:7.0,precoComb:3.4,custoComb:9.71,manut:0,seguro:0.88,liquido:44.21},
+            {data:"2026-10-19",viagens:5,minutos:64,bruto:37.78,extra:0,km:23.3,consumo:7.9,precoComb:3.5,custoComb:10.32,manut:0,seguro:0.6,liquido:26.86},
+            {data:"2026-10-20",viagens:7,minutos:90,bruto:59.65,extra:0,km:32.0,consumo:7.8,precoComb:3.5,custoComb:14.36,manut:0,seguro:0.95,liquido:44.34}
         ];
 
-        // --- DADOS REAIS: TRANSAÇÕES (Amostra principal + Lógica de carregamento) ---
-        // (No ambiente real, estes dados vêm do Supabase. Aqui simulamos o estado local com os dados CSV)
-        let transactions = [
-            { data: "2026-10-05", tipo: "receita", descricao: "Salário mensal", categoria: "Salário", subcategoria: "Salário mensal 💰", conta: "Itaú", valor: 2510.00, status: "pago" },
-            { data: "2026-10-07", tipo: "receita", descricao: "Vale alimentação", categoria: "Benefícios", subcategoria: "Vale alimentação 🍔", conta: "C6 Bank", valor: 682.00, status: "pago" },
-            { data: "2026-10-08", tipo: "receita", descricao: "Uber — lucro líquido", categoria: "Renda extra", subcategoria: "Uber 🚕", conta: "Uber", valor: 51.03, status: "pago" },
-            { data: "2026-10-10", tipo: "despesa", descricao: "Condominio", categoria: "Moradia", subcategoria: "Condomínio 🔒", conta: "Itaú", valor: 298.12, status: "pago" },
-            { data: "2026-10-28", tipo: "despesa", descricao: "IPVA e licenciamento", categoria: "Carro", subcategoria: "IPVA / Licenciamento 📄", conta: "C6 Bank", valor: 151.28, status: "pendente" }
+        const rawTransactions = [
+            {data:'2025-09-06',tipo:'despesa',descricao:'Fogão Dako',categoria:'Eletrônicos',conta:'Itaú',valor:76.76,status:'pago'},
+            {data:'2025-10-06',tipo:'despesa',descricao:'Fogão Dako',categoria:'Eletrônicos',conta:'Itaú',valor:76.76,status:'pago'},
+            {data:'2025-11-06',tipo:'despesa',descricao:'Fogão Dako',categoria:'Eletrônicos',conta:'Itaú',valor:76.76,status:'pago'},
+            {data:'2025-12-06',tipo:'despesa',descricao:'Fogão Dako',categoria:'Eletrônicos',conta:'Itaú',valor:76.76,status:'pago'},
+            {data:'2026-01-06',tipo:'despesa',descricao:'Fogão Dako',categoria:'Eletrônicos',conta:'Itaú',valor:76.76,status:'pago'},
+            {data:'2026-08-25',tipo:'despesa',descricao:'Folha de EVA',categoria:'Outros',conta:'Itaú',valor:1.99,status:'pago'},
+            {data:'2026-08-26',tipo:'despesa',descricao:'Carolinas (200g)',categoria:'Alimentação',conta:'Itaú',valor:16.16,status:'pago'},
+            {data:'2026-08-28',tipo:'despesa',descricao:'Bebidas',categoria:'Alimentação',conta:'Itaú',valor:15.8,status:'pago'},
+            {data:'2026-08-28',tipo:'receita',descricao:'PIS',categoria:'Outros',conta:'Transferência bancária',valor:1480.0,status:'pago'},
+            {data:'2026-08-28',tipo:'despesa',descricao:'Etanol 3,29 l',categoria:'Carro',conta:'C6 Bank',valor:50.0,status:'pago'},
+            {data:'2026-08-28',tipo:'despesa',descricao:'Barra de chocolate',categoria:'Alimentação',conta:'Itaú',valor:11.99,status:'pago'},
+            {data:'2026-08-28',tipo:'receita',descricao:'Rendimento Uber',categoria:'Renda extra',conta:'Pix',valor:380.0,status:'pago'},
+            {data:'2026-08-28',tipo:'despesa',descricao:'Fogão 4 bocas',categoria:'Eletrônicos',conta:'Itaú',valor:76.76,status:'pago'},
+            {data:'2026-08-28',tipo:'despesa',descricao:'Tenis Adidas (2 uni)',categoria:'Pessoais',conta:'Itaú',valor:52.63,status:'pago'},
+            {data:'2026-08-28',tipo:'despesa',descricao:'Calça',categoria:'Pessoais',conta:'Itaú',valor:53.33,status:'pago'},
+            {data:'2026-08-28',tipo:'despesa',descricao:'Manopla do Cambio',categoria:'Carro',conta:'Itaú',valor:23.15,status:'pago'},
+            {data:'2026-08-28',tipo:'despesa',descricao:'Spotify',categoria:'Serviços',conta:'Itaú - Pix',valor:10.0,status:'pago'},
+            {data:'2026-08-28',tipo:'despesa',descricao:'Freio, bico e troca de manopla',categoria:'Carro',conta:'C6 Bank',valor:250.39,status:'pago'},
+            {data:'2026-08-28',tipo:'despesa',descricao:'Parcelamento de fatura',categoria:'Financeiro',conta:'C6 Bank',valor:236.56,status:'pago'},
+            {data:'2026-08-28',tipo:'despesa',descricao:'IPVA e licenciamento',categoria:'Carro',conta:'C6 Bank',valor:151.28,status:'pago'},
+            {data:'2026-08-28',tipo:'despesa',descricao:'Taxa parcelamento Zul',categoria:'Financeiro',conta:'C6 Bank',valor:38.36,status:'pago'},
+            {data:'2026-08-28',tipo:'despesa',descricao:'Fone de ouvido',categoria:'Eletrônicos',conta:'C6 Bank',valor:34.7,status:'pago'},
+            {data:'2026-08-28',tipo:'despesa',descricao:'Kit de perfume',categoria:'Família',conta:'C6 Bank',valor:47.47,status:'pago'},
+            {data:'2026-09-28',tipo:'despesa',descricao:'Ração das dogs',categoria:'Pets',conta:'Nubank',valor:74.59,status:'pago'},
+            {data:'2026-08-28',tipo:'receita',descricao:'Vale alimentação',categoria:'Outros',conta:'Transferência bancária',valor:682.0,status:'pago'},
+            {data:'2026-08-28',tipo:'despesa',descricao:'Sorvete no cascão',categoria:'Alimentação',conta:'Itaú',valor:7.0,status:'pago'},
+            {data:'2026-08-29',tipo:'despesa',descricao:'Mini pizza',categoria:'Alimentação',conta:'Itaú',valor:36.0,status:'pago'},
+            {data:'2026-08-29',tipo:'despesa',descricao:'Sorvete',categoria:'Alimentação',conta:'Itaú',valor:7.0,status:'pago'},
+            {data:'2026-08-29',tipo:'despesa',descricao:'Massa com frango crocante',categoria:'Alimentação',conta:'Itaú',valor:48.98,status:'pago'},
+            {data:'2026-08-30',tipo:'despesa',descricao:'Pedaço de bolo - ninho com avelã',categoria:'Alimentação',conta:'Itaú',valor:22.0,status:'pago'},
+            {data:'2026-08-30',tipo:'despesa',descricao:'Tobogã',categoria:'Lazer',conta:'Itaú - Pix',valor:40.0,status:'pago'},
+            {data:'2026-08-30',tipo:'receita',descricao:'Reembolso - tobogã',categoria:'Reembolso',conta:'Pix',valor:10.0,status:'pago'},
+            {data:'2026-08-31',tipo:'receita',descricao:'Pag. Minoxidil (Ivan)',categoria:'Reembolso',conta:'Pix',valor:44.0,status:'pago'},
+            {data:'2026-08-31',tipo:'receita',descricao:'Tobogã (mãe e gata)',categoria:'Reembolso',conta:'Pix',valor:20.0,status:'pago'},
+            {data:'2026-09-01',tipo:'despesa',descricao:'Snickers',categoria:'Alimentação',conta:'Itaú',valor:4.59,status:'pago'},
+            {data:'2026-09-01',tipo:'despesa',descricao:'Pão',categoria:'Alimentação',conta:'Itaú',valor:3.01,status:'pago'},
+            {data:'2026-09-02',tipo:'despesa',descricao:'Almoço',categoria:'Alimentação',conta:'Itaú',valor:48.98,status:'pago'},
+            {data:'2026-09-02',tipo:'despesa',descricao:'Etanol - 3,29',categoria:'Carro',conta:'Itaú',valor:124.63,status:'pago'},
+            {data:'2026-09-03',tipo:'receita',descricao:'Uber - corrida do dia',categoria:'Renda extra',conta:'Pix',valor:51.25,status:'pago'},
+            {data:'2026-09-04',tipo:'despesa',descricao:'Sorvete',categoria:'Alimentação',conta:'Itaú',valor:10.99,status:'pago'},
+            {data:'2026-09-04',tipo:'despesa',descricao:'Combo de lanche',categoria:'Alimentação',conta:'Itaú - Pix',valor:27.45,status:'pago'},
+            {data:'2026-09-04',tipo:'despesa',descricao:'Parmegiana de frango',categoria:'Alimentação',conta:'Itaú',valor:32.0,status:'pago'},
+            {data:'2026-09-05',tipo:'despesa',descricao:'Combo de lanche',categoria:'Alimentação',conta:'Itaú',valor:50.9,status:'pago'},
+            {data:'2026-09-06',tipo:'despesa',descricao:'Lanche',categoria:'Alimentação',conta:'Itaú',valor:33.0,status:'pago'},
+            {data:'2026-09-07',tipo:'despesa',descricao:'Consumo de gás',categoria:'Moradia',conta:'Itaú - Pix',valor:60.16,status:'pago'},
+            {data:'2026-09-08',tipo:'receita',descricao:'Uber - corrida do dia',categoria:'Renda extra',conta:'Pix',valor:39.75,status:'pago'},
+            {data:'2026-09-10',tipo:'despesa',descricao:'Dispesa mensal',categoria:'Alimentação',conta:'Itaú',valor:430.0,status:'pago'},
+            {data:'2026-09-11',tipo:'receita',descricao:'Uber - corrida do dia',categoria:'Renda extra',conta:'Pix',valor:51.35,status:'pago'},
+            {data:'2026-09-28',tipo:'despesa',descricao:'Fogão 4 bocas',categoria:'Eletrônicos',conta:'Itaú',valor:76.76,status:'pago'},
+            {data:'2026-09-28',tipo:'despesa',descricao:'Calça',categoria:'Pessoais',conta:'Itaú',valor:53.33,status:'pago'},
+            {data:'2026-09-28',tipo:'despesa',descricao:'Manopla do Cambio',categoria:'Carro',conta:'Itaú',valor:23.15,status:'pago'},
+            {data:'2026-09-28',tipo:'despesa',descricao:'Freio, bico e troca de manopla',categoria:'Carro',conta:'C6 Bank',valor:250.39,status:'pago'},
+            {data:'2026-09-28',tipo:'despesa',descricao:'Parcelamento de fatura',categoria:'Financeiro',conta:'C6 Bank',valor:236.56,status:'pago'},
+            {data:'2026-09-28',tipo:'despesa',descricao:'IPVA e licenciamento',categoria:'Carro',conta:'C6 Bank',valor:151.28,status:'pago'},
+            {data:'2026-09-28',tipo:'despesa',descricao:'Taxa parcelamento Zul',categoria:'Financeiro',conta:'C6 Bank',valor:38.36,status:'pago'},
+            {data:'2026-09-28',tipo:'despesa',descricao:'Fone de ouvido',categoria:'Eletrônicos',conta:'C6 Bank',valor:34.7,status:'pago'},
+            {data:'2026-09-28',tipo:'despesa',descricao:'Kit de perfume',categoria:'Família',conta:'C6 Bank',valor:47.47,status:'pago'},
+            {data:'2026-10-28',tipo:'despesa',descricao:'Fogão 4 bocas',categoria:'Eletrônicos',conta:'Itaú',valor:76.76,status:'pendente'},
+            {data:'2026-10-28',tipo:'despesa',descricao:'Freio, bico e troca de manopla',categoria:'Carro',conta:'C6 Bank',valor:250.39,status:'pendente'},
+            {data:'2026-10-28',tipo:'despesa',descricao:'Parcelamento de fatura',categoria:'Financeiro',conta:'C6 Bank',valor:236.56,status:'pendente'},
+            {data:'2026-10-28',tipo:'despesa',descricao:'IPVA e licenciamento',categoria:'Carro',conta:'C6 Bank',valor:151.28,status:'pendente'},
+            {data:'2026-10-28',tipo:'despesa',descricao:'Taxa parcelamento Zul',categoria:'Financeiro',conta:'C6 Bank',valor:38.36,status:'pendente'},
+            {data:'2026-11-28',tipo:'despesa',descricao:'Fogão 4 bocas',categoria:'Eletrônicos',conta:'Itaú',valor:76.76,status:'pendente'},
+            {data:'2026-11-28',tipo:'despesa',descricao:'Freio, bico e troca de manopla',categoria:'Carro',conta:'C6 Bank',valor:250.39,status:'pendente'},
+            {data:'2026-12-28',tipo:'despesa',descricao:'Fogão 4 bocas',categoria:'Eletrônicos',conta:'Itaú',valor:76.76,status:'pendente'},
+            {data:'2027-01-28',tipo:'despesa',descricao:'Fogão 4 bocas',categoria:'Eletrônicos',conta:'Itaú',valor:76.76,status:'pendente'},
+            {data:'2026-09-14',tipo:'despesa',descricao:'Seguro Auto',categoria:'Carro',conta:'Itaú',valor:147.47,status:'pago'},
+            {data:'2026-10-14',tipo:'despesa',descricao:'Seguro Auto',categoria:'Carro',conta:'Itaú',valor:147.47,status:'pago'},
+            {data:'2026-11-14',tipo:'despesa',descricao:'Seguro Auto',categoria:'Carro',conta:'Itaú',valor:147.47,status:'pendente'},
+            {data:'2026-12-14',tipo:'despesa',descricao:'Seguro Auto',categoria:'Carro',conta:'Itaú',valor:147.47,status:'pendente'},
+            {data:'2027-01-14',tipo:'despesa',descricao:'Seguro Auto',categoria:'Carro',conta:'Itaú',valor:147.47,status:'pendente'},
+            {data:'2027-02-14',tipo:'despesa',descricao:'Seguro Auto',categoria:'Carro',conta:'Itaú',valor:147.47,status:'pendente'},
+            {data:'2027-03-14',tipo:'despesa',descricao:'Seguro Auto',categoria:'Carro',conta:'Itaú',valor:147.47,status:'pendente'},
+            {data:'2027-04-14',tipo:'despesa',descricao:'Seguro Auto',categoria:'Carro',conta:'Itaú',valor:147.47,status:'pendente'},
+            {data:'2027-05-14',tipo:'despesa',descricao:'Seguro Auto',categoria:'Carro',conta:'Itaú',valor:147.47,status:'pendente'},
+            {data:'2027-06-14',tipo:'despesa',descricao:'Seguro Auto',categoria:'Carro',conta:'Itaú',valor:147.47,status:'pendente'},
+            {data:'2026-09-15',tipo:'despesa',descricao:'Cokies',categoria:'Alimentação',conta:'Itaú',valor:13.9,status:'pago'},
+            {data:'2026-09-15',tipo:'receita',descricao:'Uber — lucro líquido',categoria:'Renda extra',conta:'Uber',valor:34.71,status:'pago'},
+            {data:'2026-10-07',tipo:'despesa',descricao:'Cone de kinder',categoria:'Alimentação',conta:'Itaú',valor:6.0,status:'pago'},
+            {data:'2026-09-17',tipo:'despesa',descricao:'Carolinas de chocolate',categoria:'Alimentação',conta:'Itaú',valor:6.63,status:'pago'},
+            {data:'2026-09-18',tipo:'receita',descricao:'Uber — lucro líquido',categoria:'Renda extra',conta:'Uber',valor:46.98,status:'pago'},
+            {data:'2026-09-19',tipo:'despesa',descricao:'Temaki',categoria:'Alimentação',conta:'Itaú',valor:37.9,status:'pago'},
+            {data:'2026-09-17',tipo:'despesa',descricao:'Pão',categoria:'Alimentação',conta:'Itaú',valor:3.12,status:'pago'},
+            {data:'2026-09-16',tipo:'despesa',descricao:'Monitor Samsung',categoria:'Eletrônicos',conta:'Itaú',valor:30.48,status:'pago'},
+            {data:'2026-10-16',tipo:'despesa',descricao:'Monitor Samsung',categoria:'Eletrônicos',conta:'Itaú',valor:30.48,status:'pago'},
+            {data:'2026-11-16',tipo:'despesa',descricao:'Monitor Samsung',categoria:'Eletrônicos',conta:'Itaú',valor:30.48,status:'pendente'},
+            {data:'2026-12-16',tipo:'despesa',descricao:'Monitor Samsung',categoria:'Eletrônicos',conta:'Itaú',valor:30.48,status:'pendente'},
+            {data:'2027-01-16',tipo:'despesa',descricao:'Monitor Samsung',categoria:'Eletrônicos',conta:'Itaú',valor:30.48,status:'pendente'},
+            {data:'2027-02-16',tipo:'despesa',descricao:'Monitor Samsung',categoria:'Eletrônicos',conta:'Itaú',valor:30.48,status:'pendente'},
+            {data:'2027-03-16',tipo:'despesa',descricao:'Monitor Samsung',categoria:'Eletrônicos',conta:'Itaú',valor:30.48,status:'pendente'},
+            {data:'2027-04-16',tipo:'despesa',descricao:'Monitor Samsung',categoria:'Eletrônicos',conta:'Itaú',valor:30.48,status:'pendente'},
+            {data:'2027-05-16',tipo:'despesa',descricao:'Monitor Samsung',categoria:'Eletrônicos',conta:'Itaú',valor:30.48,status:'pendente'},
+            {data:'2027-06-16',tipo:'despesa',descricao:'Monitor Samsung',categoria:'Eletrônicos',conta:'Itaú',valor:30.48,status:'pendente'},
+            {data:'2027-07-16',tipo:'despesa',descricao:'Monitor Samsung',categoria:'Eletrônicos',conta:'Itaú',valor:30.48,status:'pendente'},
+            {data:'2027-08-16',tipo:'despesa',descricao:'Monitor Samsung',categoria:'Eletrônicos',conta:'Itaú',valor:30.48,status:'pendente'},
+            {data:'2027-09-16',tipo:'despesa',descricao:'Monitor Samsung',categoria:'Eletrônicos',conta:'Itaú',valor:30.48,status:'pendente'},
+            {data:'2027-10-16',tipo:'despesa',descricao:'Monitor Samsung',categoria:'Eletrônicos',conta:'Itaú',valor:30.48,status:'pendente'},
+            {data:'2027-11-16',tipo:'despesa',descricao:'Monitor Samsung',categoria:'Eletrônicos',conta:'Itaú',valor:30.48,status:'pendente'},
+            {data:'2027-12-16',tipo:'despesa',descricao:'Monitor Samsung',categoria:'Eletrônicos',conta:'Itaú',valor:30.48,status:'pendente'},
+            {data:'2028-01-16',tipo:'despesa',descricao:'Monitor Samsung',categoria:'Eletrônicos',conta:'Itaú',valor:30.48,status:'pendente'},
+            {data:'2028-02-16',tipo:'despesa',descricao:'Monitor Samsung',categoria:'Eletrônicos',conta:'Itaú',valor:30.48,status:'pendente'},
+            {data:'2028-03-16',tipo:'despesa',descricao:'Monitor Samsung',categoria:'Eletrônicos',conta:'Itaú',valor:30.48,status:'pendente'},
+            {data:'2028-04-16',tipo:'despesa',descricao:'Monitor Samsung',categoria:'Eletrônicos',conta:'Itaú',valor:30.48,status:'pendente'},
+            {data:'2028-05-16',tipo:'despesa',descricao:'Monitor Samsung',categoria:'Eletrônicos',conta:'Itaú',valor:30.53,status:'pendente'},
+            {data:'2026-09-15',tipo:'despesa',descricao:'Ração da Bolota',categoria:'Pets',conta:'Itaú',valor:49.9,status:'pago'},
+            {data:'2026-09-14',tipo:'despesa',descricao:'Etanol',categoria:'Carro',conta:'Itaú',valor:122.65,status:'pago'},
+            {data:'2026-09-13',tipo:'despesa',descricao:'Mini pastel e coca',categoria:'Alimentação',conta:'Itaú',valor:18.48,status:'pago'},
+            {data:'2026-09-12',tipo:'despesa',descricao:'Noite do Hamburguer Artesanal',categoria:'Alimentação',conta:'Itaú',valor:43.03,status:'pago'},
+            {data:'2026-09-11',tipo:'despesa',descricao:'Energia do apê',categoria:'Moradia',conta:'Itaú',valor:28.5,status:'pago'},
+            {data:'2026-10-11',tipo:'despesa',descricao:'Energia do apê',categoria:'Moradia',conta:'Itaú',valor:28.5,status:'pago'},
+            {data:'2026-11-11',tipo:'despesa',descricao:'Energia do apê',categoria:'Moradia',conta:'Itaú',valor:28.5,status:'pendente'},
+            {data:'2026-09-10',tipo:'despesa',descricao:'Pedaço de bolo',categoria:'Alimentação',conta:'Itaú',valor:6.98,status:'pago'},
+            {data:'2026-09-10',tipo:'despesa',descricao:'Requeijão',categoria:'Alimentação',conta:'Itaú',valor:9.99,status:'pago'},
+            {data:'2026-09-14',tipo:'despesa',descricao:'Memoria RAM 8GB',categoria:'Eletrônicos',conta:'Amazon',valor:33.17,status:'pago'},
+            {data:'2026-10-14',tipo:'despesa',descricao:'Memoria RAM 8GB',categoria:'Eletrônicos',conta:'Amazon',valor:33.17,status:'pago'},
+            {data:'2026-11-14',tipo:'despesa',descricao:'Memoria RAM 8GB',categoria:'Eletrônicos',conta:'Amazon',valor:33.17,status:'pendente'},
+            {data:'2026-12-14',tipo:'despesa',descricao:'Memoria RAM 8GB',categoria:'Eletrônicos',conta:'Amazon',valor:33.17,status:'pendente'},
+            {data:'2027-01-14',tipo:'despesa',descricao:'Memoria RAM 8GB',categoria:'Eletrônicos',conta:'Amazon',valor:33.17,status:'pendente'},
+            {data:'2027-02-14',tipo:'despesa',descricao:'Memoria RAM 8GB',categoria:'Eletrônicos',conta:'Amazon',valor:33.17,status:'pendente'},
+            {data:'2027-03-14',tipo:'despesa',descricao:'Memoria RAM 8GB',categoria:'Eletrônicos',conta:'Amazon',valor:33.17,status:'pendente'},
+            {data:'2027-04-14',tipo:'despesa',descricao:'Memoria RAM 8GB',categoria:'Eletrônicos',conta:'Amazon',valor:33.17,status:'pendente'},
+            {data:'2027-05-14',tipo:'despesa',descricao:'Memoria RAM 8GB',categoria:'Eletrônicos',conta:'Amazon',valor:33.17,status:'pendente'},
+            {data:'2027-06-14',tipo:'despesa',descricao:'Memoria RAM 8GB',categoria:'Eletrônicos',conta:'Amazon',valor:33.17,status:'pendente'},
+            {data:'2027-07-14',tipo:'despesa',descricao:'Memoria RAM 8GB',categoria:'Eletrônicos',conta:'Amazon',valor:33.17,status:'pendente'},
+            {data:'2027-08-14',tipo:'despesa',descricao:'Memoria RAM 8GB',categoria:'Eletrônicos',conta:'Amazon',valor:33.17,status:'pendente'},
+            {data:'2026-09-20',tipo:'despesa',descricao:'Brownie',categoria:'Alimentação',conta:'Itaú',valor:12.0,status:'pago'},
+            {data:'2026-09-20',tipo:'despesa',descricao:'Combo de lanche',categoria:'Alimentação',conta:'Itaú',valor:24.9,status:'pago'},
+            {data:'2026-09-20',tipo:'despesa',descricao:'Açaí',categoria:'Alimentação',conta:'Itaú',valor:21.9,status:'pago'},
+            {data:'2026-09-21',tipo:'receita',descricao:'Uber — lucro líquido',categoria:'Renda extra',conta:'Uber',valor:41.84,status:'pago'},
+            {data:'2026-08-18',tipo:'despesa',descricao:'Ração das dogs',categoria:'Pets',conta:'Nubank',valor:74.59,status:'pago'},
+            {data:'2026-09-18',tipo:'despesa',descricao:'Pix Crédito',categoria:'Financeiro',conta:'Nubank',valor:90.24,status:'pago'},
+            {data:'2026-09-21',tipo:'despesa',descricao:'Dinheiro emprestado',categoria:'Financeiro',conta:'Itaú',valor:100.0,status:'pago'},
+            {data:'2026-09-22',tipo:'despesa',descricao:'Carolinas de chocolate',categoria:'Alimentação',conta:'Itaú',valor:6.31,status:'pago'},
+            {data:'2026-09-22',tipo:'receita',descricao:'Uber — lucro líquido',categoria:'Renda extra',conta:'Uber',valor:41.02,status:'pago'},
+            {data:'2026-09-22',tipo:'despesa',descricao:'Etanol - 3,90L',categoria:'Carro',conta:'Itaú',valor:50.0,status:'pago'},
+            {data:'2026-09-22',tipo:'despesa',descricao:'Pão',categoria:'Alimentação',conta:'Itaú',valor:2.98,status:'pago'},
+            {data:'2026-09-22',tipo:'receita',descricao:'Reembolso do pão',categoria:'Salário',conta:'Itaú',valor:3.0,status:'pago'},
+            {data:'2026-09-23',tipo:'receita',descricao:'Uber — lucro líquido',categoria:'Renda extra',conta:'Uber',valor:45.17,status:'pago'},
+            {data:'2026-10-06',tipo:'despesa',descricao:'Docinho de morango',categoria:'Alimentação',conta:'Itaú',valor:5.0,status:'pago'},
+            {data:'2026-09-24',tipo:'despesa',descricao:'Kit de chave relojeiro',categoria:'Eletrônicos',conta:'Amazon',valor:10.26,status:'pago'},
+            {data:'2026-10-06',tipo:'despesa',descricao:'Bolinho de chocolate',categoria:'Alimentação',conta:'Itaú',valor:10.0,status:'pago'},
+            {data:'2026-09-24',tipo:'receita',descricao:'Uber — lucro líquido',categoria:'Renda extra',conta:'Uber',valor:68.04,status:'pago'},
+            {data:'2026-09-25',tipo:'despesa',descricao:'Marmita',categoria:'Alimentação',conta:'Itaú',valor:18.59,status:'pago'},
+            {data:'2026-10-06',tipo:'despesa',descricao:'Doce de ninho',categoria:'Alimentação',conta:'Itaú',valor:10.0,status:'pago'},
+            {data:'2026-09-26',tipo:'despesa',descricao:'Taxa de transferência instantânea',categoria:'Financeiro',conta:'Itaú',valor:4.5,status:'pago'},
+            {data:'2026-09-27',tipo:'despesa',descricao:'Carne para churrasco',categoria:'Lazer',conta:'Itaú',valor:24.32,status:'pago'},
+            {data:'2026-09-27',tipo:'despesa',descricao:'Bebida',categoria:'Lazer',conta:'Itaú',valor:6.95,status:'pago'},
+            {data:'2026-10-06',tipo:'despesa',descricao:'Brigadeiro Gourmet (Isa)',categoria:'Alimentação',conta:'Itaú',valor:9.0,status:'pago'},
+            {data:'2026-09-29',tipo:'receita',descricao:'Uber — lucro líquido',categoria:'Renda extra',conta:'Uber',valor:50.9,status:'pago'},
+            {data:'2026-10-06',tipo:'despesa',descricao:'Trufa',categoria:'Alimentação',conta:'Itaú',valor:18.0,status:'pago'},
+            {data:'2026-09-30',tipo:'receita',descricao:'Uber — lucro líquido',categoria:'Renda extra',conta:'Uber',valor:49.18,status:'pago'},
+            {data:'2026-10-01',tipo:'despesa',descricao:'Lanche KFC',categoria:'Alimentação',conta:'Itaú',valor:24.9,status:'pago'},
+            {data:'2026-10-01',tipo:'despesa',descricao:'Casquinha ovomaltine',categoria:'Alimentação',conta:'Itaú',valor:5.0,status:'pago'},
+            {data:'2026-10-02',tipo:'despesa',descricao:'Méqui colosso',categoria:'Alimentação',conta:'Itaú',valor:6.0,status:'pago'},
+            {data:'2026-10-06',tipo:'receita',descricao:'Uber — lucro líquido',categoria:'Renda extra',conta:'Uber',valor:37.79,status:'pago'},
+            {data:'2026-10-06',tipo:'despesa',descricao:'Aniversariante do mês (Grazi e Ana Cristina)',categoria:'Presentes',conta:'Itaú',valor:20.0,status:'pago'},
+            {data:'2026-10-05',tipo:'receita',descricao:'Salário mensal',categoria:'Salário',conta:'Itaú',valor:2510.0,status:'pago'},
+            {data:'2026-10-07',tipo:'receita',descricao:'Vale alimentação',categoria:'Benefícios',conta:'Itaú',valor:682.0,status:'pago'},
+            {data:'2026-10-07',tipo:'despesa',descricao:'Barra de chocolate',categoria:'Alimentação',conta:'Itaú',valor:9.9,status:'pago'},
+            {data:'2026-10-07',tipo:'receita',descricao:'Uber — lucro líquido',categoria:'Renda extra',conta:'Uber',valor:49.28,status:'pago'},
+            {data:'2026-10-07',tipo:'despesa',descricao:'Mel',categoria:'Família',conta:'Itaú',valor:50.0,status:'pago'},
+            {data:'2026-10-08',tipo:'despesa',descricao:'Spotify',categoria:'Serviços',conta:'Itaú',valor:10.0,status:'pago'},
+            {data:'2026-10-08',tipo:'receita',descricao:'Uber — lucro líquido',categoria:'Renda extra',conta:'Uber',valor:51.03,status:'pago'},
+            {data:'2026-10-09',tipo:'receita',descricao:'Uber — lucro líquido',categoria:'Renda extra',conta:'Uber',valor:44.21,status:'pago'},
+            {data:'2026-10-10',tipo:'despesa',descricao:'Vivo Ultra (fixa e móvel)',categoria:'Moradia',conta:'Itaú',valor:160.0,status:'pago'},
+            {data:'2026-10-10',tipo:'despesa',descricao:'Condominio',categoria:'Moradia',conta:'Itaú',valor:298.12,status:'pago'},
+            {data:'2026-10-14',tipo:'despesa',descricao:'Icloud',categoria:'Serviços',conta:'Itaú',valor:5.9,status:'pago'},
+            {data:'2026-10-19',tipo:'receita',descricao:'Uber — lucro líquido',categoria:'Renda extra',conta:'Uber',valor:26.86,status:'pago'},
+            {data:'2026-10-20',tipo:'receita',descricao:'Uber — lucro líquido',categoria:'Renda extra',conta:'Uber',valor:44.34,status:'pago'}
         ];
 
-        // --- FUNÇÕES DA INTERFACE ---
-        function updateSubcategories() {
-            const catSelect = document.getElementById("categoriaSelect");
-            const subSelect = document.getElementById("subcategoriaSelect");
-            const category = catSelect.value;
-            
-            subSelect.innerHTML = '<option value="">Selecione a subcategoria...</option>';
-            
-            if (category && subcategoriasMap[category]) {
-                subSelect.disabled = false;
-                subcategoriasMap[category].forEach(sub => {
-                    let opt = document.createElement('option');
-                    opt.value = sub;
-                    opt.textContent = sub;
-                    subSelect.appendChild(opt);
-                });
+        // Estado Global
+        let transactions = [];
+        let uberShifts = [];
+        let currentTab = 'dashboard';
+        let txQuickFilter = 'all';
+        let uberScope = 'all';
+        let modalTxType = 'despesa';
+        let charts = {};
+
+        function loadState() {
+            const savedTx = localStorage.getItem('financaspro_tx_v3');
+            const savedUber = localStorage.getItem('financaspro_uber_v3');
+            if (savedTx) {
+                transactions = JSON.parse(savedTx);
             } else {
-                subSelect.disabled = true;
-                subSelect.innerHTML = '<option value="">Escolha a categoria primeiro</option>';
+                transactions = rawTransactions.map((t, idx) => ({
+                    id: 'tx-' + (idx + 1),
+                    ...t,
+                    subcategoria: t.subcategoria || inferSubcategory(t.categoria, t.descricao, t.tipo),
+                    forma: t.forma || (t.conta + ' - Crédito')
+                }));
+                localStorage.setItem('financaspro_tx_v3', JSON.stringify(transactions));
+            }
+            if (savedUber) {
+                uberShifts = JSON.parse(savedUber);
+            } else {
+                uberShifts = [...defaultUberShifts];
+                localStorage.setItem('financaspro_uber_v3', JSON.stringify(uberShifts));
             }
         }
 
+        function resetDefaultData() {
+            if (confirm('Deseja restaurar os 169 lançamentos e 18 turnos Uber originais?')) {
+                localStorage.removeItem('financaspro_tx_v3');
+                localStorage.removeItem('financaspro_uber_v3');
+                loadState();
+                populateFilterDropdowns();
+                refreshAllViews();
+            }
+        }
+
+        const fmtBRL = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v || 0);
+        const fmtDate = (d) => d ? d.split('-').reverse().join('/') : '';
+
+        function filterByGlobalPeriod(dateStr) {
+            const period = document.getElementById('globalMonthFilter').value;
+            if (period === 'all') return true;
+            return dateStr && dateStr.startsWith(period);
+        }
+
+        // ============================================================================
+        // 3. NAVEGAÇÃO E FILTROS
+        // ============================================================================
         function switchTab(tabId) {
+            currentTab = tabId;
             document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
-            const activeTab = document.getElementById('tab-' + tabId);
-            if (activeTab) activeTab.classList.remove('hidden');
-            
+            document.getElementById('tab-' + tabId).classList.remove('hidden');
+
             document.querySelectorAll('.nav-item').forEach(el => {
-                el.classList.remove('bg-blue-50', 'dark:bg-blue-900/20', 'text-blue-600', 'dark:text-blue-400', 'font-medium', 'font-bold', 'text-emerald-500');
-                if (el.id !== 'nav-uber') {
-                    el.classList.add('text-slate-600', 'dark:text-slate-400');
-                } else {
-                    el.classList.add('text-slate-600', 'dark:text-slate-400'); 
-                }
+                el.className = 'nav-item flex items-center justify-between px-4 py-3 rounded-xl text-sm font-semibold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all';
             });
-            
             const activeNav = document.getElementById('nav-' + tabId);
-            if(activeNav) {
-                if(tabId === 'uber') {
-                    activeNav.classList.remove('text-slate-600', 'dark:text-slate-400');
-                    activeNav.classList.add('bg-blue-50', 'dark:bg-blue-900/20', 'text-blue-600', 'dark:text-blue-400', 'font-medium');
-                    renderUber();
-                } else {
-                    activeNav.classList.remove('text-slate-600', 'dark:text-slate-400');
-                    activeNav.classList.add('font-bold', 'text-emerald-500', 'bg-slate-100', 'dark:bg-slate-800');
-                    if (tabId === 'dashboard') renderDashboard();
-                    if (tabId === 'transactions') renderTransactions();
-                }
-            }
-        }
-
-        function openModal(id) { document.getElementById(id).classList.remove('hidden'); }
-        function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
-
-        const themeToggleBtn = document.getElementById('themeToggle');
-        const themeIcon = document.getElementById('themeIcon');
-        themeToggleBtn.addEventListener('click', () => {
-            document.documentElement.classList.toggle('dark');
-            if (document.documentElement.classList.contains('dark')) {
-                themeIcon.classList.remove('fa-moon');
-                themeIcon.classList.add('fa-sun');
+            if (tabId === 'uber') {
+                activeNav.className = 'nav-item flex items-center justify-between px-4 py-3 rounded-xl text-sm font-bold bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 transition-all';
+                document.getElementById('pageTitle').textContent = 'Uber';
+                document.getElementById('pageSubtitle').textContent = 'Gestão operacional de turnos, consumo e lucro líquido';
+            } else if (tabId === 'transactions') {
+                activeNav.className = 'nav-item flex items-center justify-between px-4 py-3 rounded-xl text-sm font-bold bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 transition-all';
+                document.getElementById('pageTitle').textContent = 'Lançamentos Financeiros';
+                document.getElementById('pageSubtitle').textContent = 'Controle detalhado por Categoria e Subcategoria';
             } else {
-                themeIcon.classList.remove('fa-sun');
-                themeIcon.classList.add('fa-moon');
+                activeNav.className = 'nav-item flex items-center justify-between px-4 py-3 rounded-xl text-sm font-bold bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 transition-all';
+                document.getElementById('pageTitle').textContent = 'Dashboard Geral';
+                document.getElementById('pageSubtitle').textContent = 'Visão consolidada das suas finanças e projeções';
             }
-        });
-
-        // Seleção de Tipo no Modal
-        document.querySelectorAll('.type-btn').forEach(btn => {
-            btn.addEventListener('click', function() {
-                document.querySelectorAll('.type-btn').forEach(b => {
-                    b.classList.remove('active', 'border-rose-500', 'bg-rose-50', 'text-rose-600', 'border-emerald-500', 'bg-emerald-50', 'text-emerald-600');
-                    b.classList.add('border-transparent', 'bg-slate-100', 'text-slate-500');
-                });
-                
-                this.classList.remove('border-transparent', 'bg-slate-100', 'text-slate-500');
-                this.classList.add('active');
-                
-                if(this.dataset.type === 'expense') {
-                    this.classList.add('border-rose-500', 'bg-rose-50', 'text-rose-600');
-                } else {
-                    this.classList.add('border-emerald-500', 'bg-emerald-50', 'text-emerald-600');
-                }
-            });
-        });
-
-        // --- FUNÇÕES DE RENDERIZAÇÃO ---
-        function formatCurrency(value) {
-            return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
+            refreshAllViews();
         }
 
-        function renderUber() {
-            let totalLiquido = 0, totalCombustivel = 0, totalKm = 0, totalMinutos = 0, totalViagens = 0, totalBruto = 0;
-            const tbody = document.getElementById('uberList');
-            tbody.innerHTML = '';
+        function refreshAllViews() {
+            document.getElementById('badge-tx-count').textContent = transactions.length;
+            document.getElementById('badge-uber-count').textContent = uberShifts.length;
+            if (currentTab === 'dashboard') renderDashboard();
+            if (currentTab === 'transactions') renderTransactions();
+            if (currentTab === 'uber') renderUber();
+        }
 
-            uberShifts.forEach(shift => {
-                totalLiquido += shift.liquido;
-                totalCombustivel += shift.combustivel;
-                totalKm += shift.km;
-                totalMinutos += shift.minutos;
-                totalViagens += shift.viagens;
-                totalBruto += shift.bruto;
+        // ============================================================================
+        // 4. RENDERIZAÇÃO DO DASHBOARD + MOTOR PREDITIVO
+        // ============================================================================
+        function renderDashboard() {
+            const periodTx = transactions.filter(t => filterByGlobalPeriod(t.data));
+            const periodUber = uberShifts.filter(s => filterByGlobalPeriod(s.data));
 
-                tbody.innerHTML += `
-                    <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
-                        <td class="px-6 py-4">${shift.data.split('-').reverse().join('/')}</td>
-                        <td class="px-6 py-4">${formatCurrency(shift.bruto)}</td>
-                        <td class="px-6 py-4">${shift.km} km</td>
-                        <td class="px-6 py-4 text-rose-500">-${formatCurrency(shift.combustivel)}</td>
-                        <td class="px-6 py-4 font-bold text-emerald-500 text-right">${formatCurrency(shift.liquido)}</td>
-                    </tr>
+            let rec = 0, desp = 0, recCount = 0, despCount = 0;
+            periodTx.forEach(t => {
+                if (t.tipo === 'receita') { rec += t.valor; recCount++; }
+                else { desp += t.valor; despCount++; }
+            });
+
+            const uberNet = periodUber.reduce((acc, s) => acc + s.liquido, 0);
+            const saldo = rec - desp;
+
+            document.getElementById('dash-saldo').textContent = fmtBRL(saldo);
+            document.getElementById('dash-saldo').className = `text-2xl font-extrabold ${saldo >= 0 ? 'text-slate-800 dark:text-white' : 'text-rose-500'}`;
+            document.getElementById('dash-receitas').textContent = fmtBRL(rec);
+            document.getElementById('dash-receitas-count').textContent = `${recCount} entradas no período`;
+            document.getElementById('dash-despesas').textContent = fmtBRL(desp);
+            document.getElementById('dash-despesas-count').textContent = `${despCount} saídas no período`;
+            document.getElementById('dash-uber').textContent = fmtBRL(uberNet);
+            document.getElementById('dash-uber-sub').textContent = `${periodUber.length} turnos realizados`;
+
+            // Gráfico 1: Fluxo de Caixa por Mês
+            const months = ['2026-08', '2026-09', '2026-10', '2026-11', '2026-12'];
+            const monthLabels = ['Ago/26', 'Set/26', 'Out/26', 'Nov/26', 'Dez/26'];
+            const recByM = months.map(m => transactions.filter(t => t.data.startsWith(m) && t.tipo === 'receita').reduce((a, b) => a + b.valor, 0));
+            const despByM = months.map(m => transactions.filter(t => t.data.startsWith(m) && t.tipo === 'despesa').reduce((a, b) => a + b.valor, 0));
+
+            if (charts.cashflow) charts.cashflow.destroy();
+            charts.cashflow = new Chart(document.getElementById('cashflowChart'), {
+                type: 'bar',
+                data: {
+                    labels: monthLabels,
+                    datasets: [
+                        { label: 'Receitas', data: recByM, backgroundColor: '#10b981', borderRadius: 6 },
+                        { label: 'Despesas', data: despByM, backgroundColor: '#f43f5e', borderRadius: 6 }
+                    ]
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'top' } } }
+            });
+
+            // Gráfico 2: Despesas por Categoria
+            const catTotals = {};
+            periodTx.filter(t => t.tipo === 'despesa').forEach(t => {
+                catTotals[t.categoria] = (catTotals[t.categoria] || 0) + t.valor;
+            });
+            const catLabels = Object.keys(catTotals);
+            const catValues = Object.values(catTotals);
+
+            if (charts.category) charts.category.destroy();
+            charts.category = new Chart(document.getElementById('categoryChart'), {
+                type: 'doughnut',
+                data: {
+                    labels: catLabels.length ? catLabels : ['Sem despesas'],
+                    datasets: [{
+                        data: catValues.length ? catValues : [1],
+                        backgroundColor: ['#10b981', '#3b82f6', '#f59e0b', '#f43f5e', '#8b5cf6', '#06b6d4', '#ec4899', '#64748b']
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right', labels: { boxWidth: 10, font: { size: 10 } } } } }
+            });
+
+            // Motor Preditivo 30/60/90 dias
+            const predMonths = [
+                { key: '2026-11', label: '30 Dias (Nov/2026)' },
+                { key: '2026-12', label: '60 Dias (Dez/2026)' },
+                { key: '2027-01', label: '90 Dias (Jan/2027)' }
+            ];
+            const predContainer = document.getElementById('predictiveCards');
+            predContainer.innerHTML = '';
+            const projBalances = [];
+            let runningBalance = saldo > 0 ? saldo : 1804.72;
+
+            predMonths.forEach(pm => {
+                const pendings = transactions.filter(t => t.data.startsWith(pm.key) && t.tipo === 'despesa');
+                const totalPend = pendings.reduce((a, b) => a + b.valor, 0);
+                const estIncome = 3445.50; // Salário + VA + Média Uber
+                const FixedCosts = 486.62; // Condomínio + Luz + Internet
+                runningBalance += (estIncome - totalPend - FixedCosts);
+                projBalances.push(runningBalance);
+
+                predContainer.innerHTML += `
+                    <div class="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/60 dark:border-slate-700 flex items-center justify-between">
+                        <div>
+                            <p class="text-xs font-bold">${pm.label}</p>
+                            <p class="text-[11px] text-slate-400">${pendings.length} parcelas agendadas</p>
+                        </div>
+                        <span class="text-xs font-extrabold text-rose-500">-${fmtBRL(totalPend)}</span>
+                    </div>
                 `;
             });
 
-            const horas = totalMinutos / 60;
-            const rendHora = totalLiquido / horas;
-            const margem = (totalLiquido / totalBruto) * 100;
-            const mediaConsumo = totalKm / (totalCombustivel / 3.45); // Estimativa de litros com R$3.45
+            if (charts.projection) charts.projection.destroy();
+            charts.projection = new Chart(document.getElementById('projectionChart'), {
+                type: 'line',
+                data: {
+                    labels: ['Out/26 (Atual)', 'Nov/26 (30d)', 'Dez/26 (60d)', 'Jan/27 (90d)'],
+                    datasets: [{
+                        label: 'Liquidez Acumulada Projetada (R$)',
+                        data: [1804.72, ...projBalances],
+                        borderColor: '#10b981',
+                        backgroundColor: 'rgba(16, 185, 129, 0.12)',
+                        fill: true,
+                        tension: 0.35
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false }
+            });
+        }
 
-            document.getElementById('uber-liquido').textContent = formatCurrency(totalLiquido);
-            document.getElementById('uber-margem').textContent = `Margem de ${margem.toFixed(1)}% (Bruto: ${formatCurrency(totalBruto)})`;
-            document.getElementById('uber-hora').textContent = `${formatCurrency(rendHora)}/h`;
-            document.getElementById('uber-tempo').textContent = `${horas.toFixed(1)} horas online`;
-            document.getElementById('uber-combustivel').textContent = formatCurrency(totalCombustivel);
-            document.getElementById('uber-consumo').textContent = `Média ${mediaConsumo.toFixed(1)} km/L`;
-            document.getElementById('uber-km').textContent = `${totalKm.toFixed(1)} km`;
-            document.getElementById('uber-viagens').textContent = `${totalViagens} viagens`;
+        // ============================================================================
+        // 5. RENDERIZAÇÃO DA ABA LANÇAMENTOS
+        // ============================================================================
+        function populateFilterDropdowns() {
+            const catFilter = document.getElementById('txCategoryFilter');
+            const accFilter = document.getElementById('txAccountFilter');
+            const allCats = [...new Set(transactions.map(t => t.categoria))].sort();
+            const allAccs = [...new Set(transactions.map(t => t.conta))].sort();
+
+            catFilter.innerHTML = '<option value="all">Todas as Categorias</option>' + allCats.map(c => `<option value="${c}">${c}</option>`).join('');
+            accFilter.innerHTML = '<option value="all">Todas as Contas / Meios</option>' + allAccs.map(a => `<option value="${a}">${a}</option>`).join('');
+            onFilterCategoryChange();
+        }
+
+        function onFilterCategoryChange() {
+            const cat = document.getElementById('txCategoryFilter').value;
+            const subFilter = document.getElementById('txSubcategoryFilter');
+            let subs = [];
+            if (cat === 'all') {
+                subs = [...new Set(transactions.map(t => t.subcategoria))].sort();
+            } else {
+                subs = expenseCategoriesMap[cat] || incomeCategoriesMap[cat] || [];
+            }
+            subFilter.innerHTML = '<option value="all">Todas as Subcategorias</option>' + subs.map(s => `<option value="${s}">${s}</option>`).join('');
+            renderTransactions();
+        }
+
+        function setTxQuickFilter(filter) {
+            txQuickFilter = filter;
+            document.querySelectorAll('.tx-tab-btn').forEach(btn => {
+                if (btn.dataset.filter === filter) {
+                    btn.className = 'tx-tab-btn px-3.5 py-1.5 rounded-xl text-xs font-bold bg-emerald-500 text-white';
+                } else {
+                    btn.className = 'tx-tab-btn px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300';
+                }
+            });
+            renderTransactions();
         }
 
         function renderTransactions() {
+            const search = (document.getElementById('txSearch').value || '').toLowerCase();
+            const cat = document.getElementById('txCategoryFilter').value;
+            const sub = document.getElementById('txSubcategoryFilter').value;
+            const acc = document.getElementById('txAccountFilter').value;
+
+            const filtered = transactions.filter(t => {
+                if (!filterByGlobalPeriod(t.data)) return false;
+                if (txQuickFilter === 'receita' && t.tipo !== 'receita') return false;
+                if (txQuickFilter === 'despesa' && t.tipo !== 'despesa') return false;
+                if (txQuickFilter === 'pago' && t.status !== 'pago') return false;
+                if (txQuickFilter === 'pendente' && t.status !== 'pendente') return false;
+                if (cat !== 'all' && t.categoria !== cat) return false;
+                if (sub !== 'all' && t.subcategoria !== sub) return false;
+                if (acc !== 'all' && t.conta !== acc) return false;
+                if (search && !t.descricao.toLowerCase().includes(search) && !(t.subcategoria || '').toLowerCase().includes(search)) return false;
+                return true;
+            }).sort((a, b) => b.data.localeCompare(a.data));
+
+            document.getElementById('txFilteredSummary').textContent = `Exibindo ${filtered.length} lançamentos`;
             const tbody = document.getElementById('transactionsList');
-            tbody.innerHTML = '';
-            
-            transactions.forEach(tx => {
-                const isIncome = tx.tipo === 'receita';
-                const statusBadge = tx.status === 'pago' 
-                    ? `<span class="px-2 py-1 bg-emerald-100 text-emerald-700 rounded-lg text-xs">Pago</span>`
-                    : `<span class="px-2 py-1 bg-amber-100 text-amber-700 rounded-lg text-xs">Pendente</span>`;
-                    
-                tbody.innerHTML += `
+            tbody.innerHTML = filtered.map(t => {
+                const isInc = t.tipo === 'receita';
+                return `
                     <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
-                        <td class="px-6 py-4 whitespace-nowrap text-slate-500">${tx.data.split('-').reverse().join('/')}</td>
-                        <td class="px-6 py-4 font-medium">${tx.descricao}</td>
-                        <td class="px-6 py-4"><span class="bg-slate-100 dark:bg-slate-800 px-3 py-1 rounded-full text-xs">${tx.subcategoria || tx.categoria}</span></td>
-                        <td class="px-6 py-4 text-slate-500">${tx.conta}</td>
-                        <td class="px-6 py-4 text-right font-bold ${isIncome ? 'text-emerald-500' : 'text-slate-800 dark:text-white'}">
-                            ${isIncome ? '+' : '-'}${formatCurrency(tx.valor)}
+                        <td class="px-4 py-3 whitespace-nowrap font-medium text-slate-500">${fmtDate(t.data)}</td>
+                        <td class="px-4 py-3 font-semibold text-slate-800 dark:text-slate-100">${t.descricao}</td>
+                        <td class="px-4 py-3">
+                            <div class="flex flex-col">
+                                <span class="text-[11px] font-bold text-slate-700 dark:text-slate-200">${t.subcategoria || t.categoria}</span>
+                                <span class="text-[10px] text-slate-400">${t.categoria}</span>
+                            </div>
                         </td>
-                        <td class="px-6 py-4 text-center">${statusBadge}</td>
+                        <td class="px-4 py-3 text-slate-500">${t.conta}</td>
+                        <td class="px-4 py-3 text-right font-extrabold ${isInc ? 'text-emerald-500' : 'text-rose-500'}">
+                            ${isInc ? '+' : '-'}${fmtBRL(t.valor)}
+                        </td>
+                        <td class="px-4 py-3 text-center">
+                            <button onclick="toggleTxStatus('${t.id}')" class="px-2.5 py-1 rounded-full text-[10px] font-bold ${t.status === 'pago' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300' : 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300'}">
+                                ${t.status === 'pago' ? 'Pago' : 'Pendente'}
+                            </button>
+                        </td>
+                        <td class="px-4 py-3 text-center">
+                            <button onclick="deleteTx('${t.id}')" class="text-slate-400 hover:text-rose-500 p-1"><i class="fa-regular fa-trash-can"></i></button>
+                        </td>
                     </tr>
                 `;
-            });
+            }).join('');
         }
 
-        function renderDashboard() {
-            let rec = 0, desp = 0;
-            transactions.forEach(tx => {
-                if (tx.tipo === 'receita') rec += tx.valor;
-                if (tx.tipo === 'despesa') desp += tx.valor;
-            });
-            
-            document.getElementById('dash-saldo').textContent = formatCurrency(rec - desp);
-            document.getElementById('dash-receitas').textContent = formatCurrency(rec);
-            document.getElementById('dash-despesas').textContent = formatCurrency(desp);
+        function toggleTxStatus(id) {
+            const tx = transactions.find(t => t.id === id);
+            if (tx) {
+                tx.status = tx.status === 'pago' ? 'pendente' : 'pago';
+                localStorage.setItem('financaspro_tx_v3', JSON.stringify(transactions));
+                refreshAllViews();
+            }
+        }
 
-            // Gráfico de Projeção
-            const ctx = document.getElementById('projectionChart');
-            if (window.projChart) window.projChart.destroy();
-            
-            window.projChart = new Chart(ctx, {
-                type: 'line',
+        function deleteTx(id) {
+            transactions = transactions.filter(t => t.id !== id);
+            localStorage.setItem('financaspro_tx_v3', JSON.stringify(transactions));
+            refreshAllViews();
+        }
+
+        // ============================================================================
+        // 6. RENDERIZAÇÃO DA ABA UBER COMPLETA
+        // ============================================================================
+        function setUberScope(scope) {
+            uberScope = scope;
+            document.getElementById('uberFilterAllBtn').className = scope === 'all' ? 'px-3 py-1.5 rounded-lg bg-blue-600 text-white transition-all' : 'px-3 py-1.5 rounded-lg text-slate-600 dark:text-slate-300 transition-all';
+            document.getElementById('uberFilterMonthBtn').className = scope === 'month' ? 'px-3 py-1.5 rounded-lg bg-blue-600 text-white transition-all' : 'px-3 py-1.5 rounded-lg text-slate-600 dark:text-slate-300 transition-all';
+            renderUber();
+        }
+
+        function renderUber() {
+            const list = uberScope === 'all' ? uberShifts : uberShifts.filter(s => filterByGlobalPeriod(s.data));
+            let bruto = 0, liquido = 0, comb = 0, km = 0, min = 0, viagens = 0, manutSeg = 0;
+
+            const tbody = document.getElementById('uberList');
+            tbody.innerHTML = list.map(s => {
+                bruto += s.bruto;
+                liquido += s.liquido;
+                comb += s.custoComb;
+                km += s.km;
+                min += s.minutos;
+                viagens += s.viagens;
+                const ms = (s.manut || 0) + (s.seguro || 0);
+                manutSeg += ms;
+                const ganhoHora = s.minutos > 0 ? (s.liquido / (s.minutos / 60)) : 0;
+
+                return `
+                    <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50">
+                        <td class="px-3.5 py-3 font-semibold">${fmtDate(s.data)}</td>
+                        <td class="px-3.5 py-3 text-center">${s.viagens}</td>
+                        <td class="px-3.5 py-3 text-center">${s.minutos} min</td>
+                        <td class="px-3.5 py-3 text-right font-semibold">${fmtBRL(s.bruto)}</td>
+                        <td class="px-3.5 py-3 text-right">${s.km.toFixed(1)} km</td>
+                        <td class="px-3.5 py-3 text-center">${s.consumo.toFixed(1)} km/L</td>
+                        <td class="px-3.5 py-3 text-right">${fmtBRL(s.precoComb)}</td>
+                        <td class="px-3.5 py-3 text-right text-rose-500">-${fmtBRL(s.custoComb)}</td>
+                        <td class="px-3.5 py-3 text-right text-amber-500">-${fmtBRL(ms)}</td>
+                        <td class="px-3.5 py-3 text-right font-extrabold text-emerald-500">${fmtBRL(s.liquido)}</td>
+                        <td class="px-3.5 py-3 text-right font-bold text-blue-600 dark:text-blue-400">${fmtBRL(ganhoHora)}/h</td>
+                    </tr>
+                `;
+            }).join('');
+
+            const horas = min / 60;
+            const rHora = horas > 0 ? liquido / horas : 0;
+            const margem = bruto > 0 ? (liquido / bruto) * 100 : 0;
+            const avgConsumo = list.length ? (list.reduce((a, b) => a + b.consumo, 0) / list.length) : 0;
+            const avgPreco = list.length ? (list.reduce((a, b) => a + b.precoComb, 0) / list.length) : 0;
+            const rKm = km > 0 ? liquido / km : 0;
+
+            document.getElementById('uber-kpi-liquido').textContent = fmtBRL(liquido);
+            document.getElementById('uber-kpi-margem').textContent = `Margem de ${margem.toFixed(1)}% (Bruto: ${fmtBRL(bruto)})`;
+            document.getElementById('uber-kpi-hora').textContent = `${fmtBRL(rHora)}/h`;
+            document.getElementById('uber-kpi-tempo').textContent = `${horas.toFixed(1)}h online (${min} min)`;
+            document.getElementById('uber-kpi-combustivel').textContent = fmtBRL(comb);
+            document.getElementById('uber-kpi-consumo').textContent = `Média ${avgConsumo.toFixed(1)} km/L | ${fmtBRL(avgPreco)}/L`;
+            document.getElementById('uber-kpi-km').textContent = `${km.toFixed(1)} km`;
+            document.getElementById('uber-kpi-viagens').textContent = `${viagens} viagens | ${fmtBRL(rKm)} líq/km`;
+            document.getElementById('uberTableSubtitle').textContent = `${list.length} turnos exibidos`;
+
+            // Gráficos Uber
+            if (charts.uberShifts) charts.uberShifts.destroy();
+            charts.uberShifts = new Chart(document.getElementById('uberShiftsChart'), {
+                type: 'bar',
                 data: {
-                    labels: ['Out', 'Nov', 'Dez', 'Jan'],
+                    labels: list.map(s => fmtDate(s.data).slice(0, 5)),
+                    datasets: [
+                        { label: 'Bruto', data: list.map(s => s.bruto), backgroundColor: '#94a3b8', borderRadius: 4 },
+                        { label: 'Líquido', data: list.map(s => s.liquido), backgroundColor: '#10b981', borderRadius: 4 },
+                        { label: 'Combustível', data: list.map(s => s.custoComb), backgroundColor: '#f43f5e', borderRadius: 4 }
+                    ]
+                },
+                options: { responsive: true, maintainAspectRatio: false }
+            });
+
+            if (charts.uberBreakdown) charts.uberBreakdown.destroy();
+            charts.uberBreakdown = new Chart(document.getElementById('uberBreakdownChart'), {
+                type: 'doughnut',
+                data: {
+                    labels: ['Lucro Líquido', 'Combustível', 'Seguro 1,6% + Manut.'],
                     datasets: [{
-                        label: 'Projeção de Saldo (R$)',
-                        data: [rec - desp, (rec - desp) - 1500, (rec - desp) - 1200, (rec - desp) + 500],
-                        borderColor: '#10b981',
-                        backgroundColor: 'rgba(16, 185, 129, 0.1)',
-                        fill: true,
-                        tension: 0.4
+                        data: [liquido, comb, manutSeg],
+                        backgroundColor: ['#10b981', '#f43f5e', '#f59e0b']
                     }]
                 },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: { legend: { display: false } },
-                    scales: { y: { beginAtZero: false } }
-                }
+                options: { responsive: true, maintainAspectRatio: false }
             });
         }
 
-        // Inicializar
-        switchTab('uber');
+        // ============================================================================
+        // 7. MODAIS E CADASTROS (CATEGORIA + SUBCATEGORIA DA PLANILHA)
+        // ============================================================================
+        function openTransactionModal() {
+            document.getElementById('txData').value = '2026-10-25';
+            setModalTxType('despesa');
+            document.getElementById('transactionModal').classList.remove('hidden');
+        }
 
+        function setModalTxType(tipo) {
+            modalTxType = tipo;
+            const btnExp = document.getElementById('btnTypeExpense');
+            const btnInc = document.getElementById('btnTypeIncome');
+            if (tipo === 'despesa') {
+                btnExp.className = 'py-2.5 rounded-xl border-2 border-rose-500 bg-rose-50 dark:bg-rose-900/20 text-rose-600 font-bold text-xs flex items-center justify-center gap-2';
+                btnInc.className = 'py-2.5 rounded-xl border-2 border-transparent bg-slate-100 dark:bg-slate-800 text-slate-500 font-bold text-xs flex items-center justify-center gap-2';
+            } else {
+                btnInc.className = 'py-2.5 rounded-xl border-2 border-emerald-500 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 font-bold text-xs flex items-center justify-center gap-2';
+                btnExp.className = 'py-2.5 rounded-xl border-2 border-transparent bg-slate-100 dark:bg-slate-800 text-slate-500 font-bold text-xs flex items-center justify-center gap-2';
+            }
+            const map = tipo === 'despesa' ? expenseCategoriesMap : incomeCategoriesMap;
+            const catSelect = document.getElementById('categoriaSelect');
+            catSelect.innerHTML = Object.keys(map).map(c => `<option value="${c}">${c}</option>`).join('');
+            updateSubcategories();
+        }
+
+        function updateSubcategories() {
+            const map = modalTxType === 'despesa' ? expenseCategoriesMap : incomeCategoriesMap;
+            const cat = document.getElementById('categoriaSelect').value;
+            const subSelect = document.getElementById('subcategoriaSelect');
+            const subs = map[cat] || [];
+            subSelect.innerHTML = subs.map(s => `<option value="${s}">${s}</option>`).join('');
+        }
+
+        function saveTransaction(e) {
+            e.preventDefault();
+            const newTx = {
+                id: 'tx-' + Date.now(),
+                data: document.getElementById('txData').value,
+                tipo: modalTxType,
+                descricao: document.getElementById('txDescricao').value,
+                categoria: document.getElementById('categoriaSelect').value,
+                subcategoria: document.getElementById('subcategoriaSelect').value,
+                conta: document.getElementById('txConta').value,
+                forma: document.getElementById('txForma').value,
+                valor: parseFloat(document.getElementById('txValor').value),
+                status: document.getElementById('txStatus').value
+            };
+            transactions.unshift(newTx);
+            localStorage.setItem('financaspro_tx_v3', JSON.stringify(transactions));
+            closeModal('transactionModal');
+            document.getElementById('transactionForm').reset();
+            populateFilterDropdowns();
+            refreshAllViews();
+        }
+
+        function openUberModal() {
+            document.getElementById('ubData').value = '2026-10-25';
+            document.getElementById('uberModal').classList.remove('hidden');
+        }
+
+        function saveUberShift(e) {
+            e.preventDefault();
+            const bruto = parseFloat(document.getElementById('ubBruto').value);
+            const km = parseFloat(document.getElementById('ubKm').value);
+            const consumo = parseFloat(document.getElementById('ubConsumo').value);
+            const precoComb = parseFloat(document.getElementById('ubPrecoComb').value);
+            const manut = parseFloat(document.getElementById('ubManut').value || 0);
+            const custoComb = (km / consumo) * precoComb;
+            const seguro = bruto * 0.016;
+            const liquido = bruto - custoComb - manut - seguro;
+
+            const shift = {
+                data: document.getElementById('ubData').value,
+                viagens: parseInt(document.getElementById('ubViagens').value),
+                minutos: parseInt(document.getElementById('ubMinutos').value),
+                bruto, extra: 0, km, consumo, precoComb,
+                custoComb: parseFloat(custoComb.toFixed(2)),
+                manut,
+                seguro: parseFloat(seguro.toFixed(2)),
+                liquido: parseFloat(liquido.toFixed(2))
+            };
+            uberShifts.push(shift);
+            localStorage.setItem('financaspro_uber_v3', JSON.stringify(uberShifts));
+            closeModal('uberModal');
+            refreshAllViews();
+        }
+
+        function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
+        function toggleSidebar() { document.getElementById('sidebar').classList.toggle('-translate-x-full'); }
+
+        function exportCSV() {
+            const headers = ['Data', 'Tipo', 'Descricao', 'Categoria', 'Subcategoria', 'Conta', 'Valor', 'Status'];
+            const rows = transactions.map(t => [t.data, t.tipo, `"${t.descricao}"`, t.categoria, `"${t.subcategoria}"`, t.conta, t.valor, t.status]);
+            const csv = [headers.join(';'), ...rows.map(r => r.join(';'))].join('\n');
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = 'financaspro-export.csv';
+            a.click();
+        }
+
+        // Tema Claro por Padrão + Alternância
+        document.getElementById('themeToggle').addEventListener('click', () => {
+            document.documentElement.classList.toggle('dark');
+            const isDark = document.documentElement.classList.contains('dark');
+            document.getElementById('themeIcon').className = isDark ? 'fa-solid fa-sun' : 'fa-solid fa-moon';
+        });
+
+        // Inicialização
+        loadState();
+        populateFilterDropdowns();
+        switchTab('dashboard');
     </script>
 </body>
 </html>
