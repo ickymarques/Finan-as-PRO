@@ -4,8 +4,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>FinançasPro - Gestão Financeira & Uber</title>
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Supabase -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script>
         tailwind.config = {
             darkMode: 'class',
@@ -21,10 +27,10 @@
         }
     </script>
 </head>
-<body class="bg-slate-50 text-slate-800 transition-colors duration-200 flex h-screen overflow-hidden">
+<body class="bg-slate-50 text-slate-800 dark:bg-darkBg dark:text-slate-200 transition-colors duration-200 flex h-screen overflow-hidden">
     
     <!-- Sidebar -->
-    <aside class="w-64 bg-white border-r border-slate-200 flex flex-col transition-colors z-10 hidden md:flex">
+    <aside class="w-64 bg-white dark:bg-darkCard border-r border-slate-200 dark:border-slate-700 flex flex-col transition-colors z-10 hidden md:flex">
         <div class="p-6 flex items-center justify-between">
             <div class="flex items-center gap-3">
                 <div class="w-10 h-10 bg-emerald-500 rounded-xl flex items-center justify-center text-white font-bold shadow-lg">
@@ -34,22 +40,25 @@
                     <h1 class="font-bold text-lg leading-tight">Finanças<span class="text-emerald-500">Pro</span></h1>
                 </div>
             </div>
+            <button id="themeToggle" class="p-2 text-slate-400 hover:text-amber-500 transition-colors">
+                <i class="fa-solid fa-moon text-xl" id="themeIcon"></i>
+            </button>
         </div>
 
         <div class="px-4 mb-6">
-            <button class="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-semibold py-3 px-4 rounded-xl shadow-md transition-all flex items-center justify-center gap-2">
+            <button onclick="openModal('transactionModal')" class="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-semibold py-3 px-4 rounded-xl shadow-md transition-all flex items-center justify-center gap-2">
                 <i class="fa-solid fa-plus"></i> Novo Lançamento
             </button>
         </div>
 
         <nav class="flex-1 px-4 space-y-2 overflow-y-auto">
-            <a href="#" class="nav-item flex items-center gap-3 px-4 py-3 rounded-lg text-slate-600 hover:bg-slate-100 transition-colors">
-                <i class="fa-solid fa-border-all w-5"></i> Dashboard Geral
+            <a href="#" onclick="switchTab('dashboard')" class="nav-item flex items-center gap-3 px-4 py-3 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors" id="nav-dashboard">
+                <i class="fa-solid fa-border-all w-5"></i> Dashboard
             </a>
-            <a href="#" class="nav-item flex items-center gap-3 px-4 py-3 rounded-lg text-slate-600 hover:bg-slate-100 transition-colors">
+            <a href="#" onclick="switchTab('transactions')" class="nav-item flex items-center gap-3 px-4 py-3 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors" id="nav-transactions">
                 <i class="fa-solid fa-arrow-right-arrow-left w-5"></i> Lançamentos
             </a>
-            <a href="#" class="nav-item flex items-center gap-3 px-4 py-3 rounded-lg bg-blue-50 text-blue-600 font-medium transition-colors">
+            <a href="#" onclick="switchTab('uber')" class="nav-item flex items-center gap-3 px-4 py-3 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors" id="nav-uber">
                 <svg class="w-5 h-5 fill-current" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                     <path d="M18.92 6.01C18.72 5.42 18.16 5 17.5 5H6.5c-.66 0-1.22.42-1.42 1.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99zM6.85 7h10.29l1.08 3.11H5.77L6.85 7zM19 17H5v-5h14v5z"/>
                     <circle cx="7.5" cy="14.5" r="1.5"/>
@@ -62,34 +71,488 @@
 
     <!-- Main Content -->
     <main class="flex-1 flex flex-col overflow-hidden">
-        <div class="flex-1 overflow-y-auto p-6 lg:p-10">
-            <div class="max-w-5xl mx-auto">
-                <div class="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
-                    <div>
-                        <h2 class="text-2xl font-bold mb-1 flex items-center gap-2">
-                            <svg class="w-6 h-6 text-blue-600" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" fill="currentColor">
-                                <path d="M18.92 6.01C18.72 5.42 18.16 5 17.5 5H6.5c-.66 0-1.22.42-1.42 1.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99zM6.85 7h10.29l1.08 3.11H5.77L6.85 7zM19 17H5v-5h14v5z"/>
-                                <circle cx="7.5" cy="14.5" r="1.5"/>
-                                <circle cx="16.5" cy="14.5" r="1.5"/>
-                            </svg>
-                            Uber
-                        </h2>
-                        <p class="text-slate-500">Resumo de 18 turnos (Out/2026)</p>
+        <header class="md:hidden bg-white dark:bg-darkCard border-b border-slate-200 dark:border-slate-700 p-4 flex justify-between items-center">
+            <div class="flex items-center gap-2">
+                <div class="w-8 h-8 bg-emerald-500 rounded-lg flex items-center justify-center text-white font-bold">
+                    <i class="fa-solid fa-dollar-sign text-sm"></i>
+                </div>
+                <h1 class="font-bold">Finanças<span class="text-emerald-500">Pro</span></h1>
+            </div>
+            <button class="text-slate-600 dark:text-slate-300 text-xl"><i class="fa-solid fa-bars"></i></button>
+        </header>
+
+        <div class="flex-1 overflow-y-auto p-6 lg:p-10" id="mainContent">
+            
+            <!-- Dashboard Tab -->
+            <div id="tab-dashboard" class="tab-content hidden">
+                <h2 class="text-2xl font-bold mb-6">Dashboard Geral</h2>
+                
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                    <div class="bg-white dark:bg-darkCard p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm">
+                        <h3 class="text-slate-500 dark:text-slate-400 text-sm font-medium mb-2">Saldo Atual</h3>
+                        <p class="text-3xl font-bold text-slate-800 dark:text-white" id="dash-saldo">R$ 0,00</p>
+                    </div>
+                    <div class="bg-white dark:bg-darkCard p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm">
+                        <h3 class="text-slate-500 dark:text-slate-400 text-sm font-medium mb-2">Receitas (Mês)</h3>
+                        <p class="text-3xl font-bold text-emerald-500" id="dash-receitas">R$ 0,00</p>
+                    </div>
+                    <div class="bg-white dark:bg-darkCard p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm">
+                        <h3 class="text-slate-500 dark:text-slate-400 text-sm font-medium mb-2">Despesas (Mês)</h3>
+                        <p class="text-3xl font-bold text-rose-500" id="dash-despesas">R$ 0,00</p>
                     </div>
                 </div>
-                
-                <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-                    <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-                        <h3 class="text-slate-500 text-sm font-medium mb-2">Total Líquido</h3>
-                        <p class="text-3xl font-bold text-emerald-500">R$ 815,22</p>
+
+                <div class="bg-white dark:bg-darkCard p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm mb-8">
+                    <h3 class="text-lg font-bold mb-4">Projeção 30/60/90 Dias</h3>
+                    <div class="relative h-64 w-full">
+                        <canvas id="projectionChart"></canvas>
                     </div>
-                    <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-                        <h3 class="text-slate-500 text-sm font-medium mb-2">Rend. Médio/Hora</h3>
-                        <p class="text-3xl font-bold text-blue-500">R$ 31,54/h</p>
+                </div>
+            </div>
+
+            <!-- Transactions Tab -->
+            <div id="tab-transactions" class="tab-content hidden">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-2xl font-bold">Lançamentos</h2>
+                    <button onclick="openModal('transactionModal')" class="md:hidden bg-emerald-500 text-white px-4 py-2 rounded-lg text-sm font-medium">
+                        <i class="fa-solid fa-plus mr-1"></i> Novo
+                    </button>
+                </div>
+                <div class="bg-white dark:bg-darkCard rounded-2xl border border-slate-200 dark:border-slate-700 overflow-hidden shadow-sm">
+                    <div class="p-4 border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 flex gap-2 overflow-x-auto">
+                        <select id="filterType" class="bg-white dark:bg-darkBg border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-1.5 text-sm outline-none" onchange="renderTransactions()">
+                            <option value="all">Todas as Movimentações</option>
+                            <option value="receita">Apenas Receitas</option>
+                            <option value="despesa">Apenas Despesas</option>
+                        </select>
+                        <select id="filterCategory" class="bg-white dark:bg-darkBg border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-1.5 text-sm outline-none" onchange="renderTransactions()">
+                            <option value="all">Todas as Categorias</option>
+                            <!-- Options preenchidas no JS -->
+                        </select>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-sm">
+                            <thead class="bg-slate-50 dark:bg-slate-800/50 text-slate-500 dark:text-slate-400">
+                                <tr>
+                                    <th class="px-6 py-4 font-medium">Data</th>
+                                    <th class="px-6 py-4 font-medium">Descrição</th>
+                                    <th class="px-6 py-4 font-medium">Categoria</th>
+                                    <th class="px-6 py-4 font-medium">Conta</th>
+                                    <th class="px-6 py-4 font-medium text-right">Valor</th>
+                                    <th class="px-6 py-4 font-medium text-center">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="transactionsList" class="divide-y divide-slate-200 dark:divide-slate-700">
+                                <!-- Lançamentos injetados aqui -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Uber Tab -->
+            <div id="tab-uber" class="tab-content hidden">
+                <div class="max-w-5xl mx-auto">
+                    <div class="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
+                        <div>
+                            <h2 class="text-2xl font-bold mb-1 flex items-center gap-2">
+                                <svg class="w-6 h-6 text-blue-600" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" fill="currentColor">
+                                    <path d="M18.92 6.01C18.72 5.42 18.16 5 17.5 5H6.5c-.66 0-1.22.42-1.42 1.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99zM6.85 7h10.29l1.08 3.11H5.77L6.85 7zM19 17H5v-5h14v5z"/>
+                                    <circle cx="7.5" cy="14.5" r="1.5"/>
+                                    <circle cx="16.5" cy="14.5" r="1.5"/>
+                                </svg>
+                                Uber
+                            </h2>
+                            <p class="text-slate-500 dark:text-slate-400">Resumo Operacional e Indicadores</p>
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+                        <div class="bg-white dark:bg-darkCard p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm">
+                            <h3 class="text-slate-500 dark:text-slate-400 text-sm font-medium mb-2">Total Líquido</h3>
+                            <p class="text-3xl font-bold text-emerald-500" id="uber-liquido">R$ 0,00</p>
+                            <p class="text-xs text-slate-400 mt-2" id="uber-margem">Margem: --</p>
+                        </div>
+                        <div class="bg-white dark:bg-darkCard p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm">
+                            <h3 class="text-slate-500 dark:text-slate-400 text-sm font-medium mb-2">Rend. Médio/Hora</h3>
+                            <p class="text-3xl font-bold text-blue-500" id="uber-hora">R$ 0,00/h</p>
+                            <p class="text-xs text-slate-400 mt-2" id="uber-tempo">0 horas online</p>
+                        </div>
+                        <div class="bg-white dark:bg-darkCard p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm">
+                            <h3 class="text-slate-500 dark:text-slate-400 text-sm font-medium mb-2">Custo Combustível</h3>
+                            <p class="text-3xl font-bold text-rose-500" id="uber-combustivel">R$ 0,00</p>
+                            <p class="text-xs text-slate-400 mt-2" id="uber-consumo">Média -- km/L</p>
+                        </div>
+                        <div class="bg-white dark:bg-darkCard p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm">
+                            <h3 class="text-slate-500 dark:text-slate-400 text-sm font-medium mb-2">Total KM</h3>
+                            <p class="text-3xl font-bold text-amber-500" id="uber-km">0 km</p>
+                            <p class="text-xs text-slate-400 mt-2" id="uber-viagens">0 viagens</p>
+                        </div>
+                    </div>
+
+                    <div class="bg-white dark:bg-darkCard rounded-2xl border border-slate-200 dark:border-slate-700 overflow-hidden shadow-sm">
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left text-sm">
+                                <thead class="bg-slate-50 dark:bg-slate-800/50 text-slate-500 dark:text-slate-400">
+                                    <tr>
+                                        <th class="px-6 py-4 font-medium">Data</th>
+                                        <th class="px-6 py-4 font-medium">Bruto</th>
+                                        <th class="px-6 py-4 font-medium">KM</th>
+                                        <th class="px-6 py-4 font-medium">Combustível</th>
+                                        <th class="px-6 py-4 font-medium text-right">Líquido</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="uberList" class="divide-y divide-slate-200 dark:divide-slate-700">
+                                    <!-- Turnos Uber injetados aqui -->
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
     </main>
+
+    <!-- Modal Novo Lançamento -->
+    <div id="transactionModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white dark:bg-darkCard w-full max-w-lg rounded-2xl shadow-xl p-6 border border-slate-200 dark:border-slate-700 max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-xl font-bold">Novo Lançamento</h3>
+                <button onclick="closeModal('transactionModal')" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
+                    <i class="fa-solid fa-xmark text-xl"></i>
+                </button>
+            </div>
+            
+            <form id="transactionForm" class="space-y-5">
+                <div class="grid grid-cols-2 gap-4">
+                    <button type="button" class="type-btn active py-2.5 rounded-xl border-2 border-rose-500 bg-rose-50 dark:bg-rose-900/20 text-rose-600 font-medium transition-colors" data-type="expense">
+                        <i class="fa-solid fa-arrow-down mr-2"></i>Despesa
+                    </button>
+                    <button type="button" class="type-btn py-2.5 rounded-xl border-2 border-transparent bg-slate-100 dark:bg-slate-800 text-slate-500 font-medium hover:bg-slate-200 transition-colors" data-type="income">
+                        <i class="fa-solid fa-arrow-up mr-2"></i>Receita
+                    </button>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-slate-500 dark:text-slate-400 mb-1">Valor</label>
+                    <input type="number" step="0.01" id="txValor" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 text-lg font-bold outline-none focus:border-emerald-500 transition-colors" placeholder="0.00" required>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-slate-500 dark:text-slate-400 mb-1">Descrição</label>
+                    <input type="text" id="txDescricao" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 outline-none focus:border-emerald-500 transition-colors" placeholder="Ex: Conta de Luz" required>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-slate-500 dark:text-slate-400 mb-1">Categoria (Aba 1)</label>
+                        <select id="categoriaSelect" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 outline-none focus:border-emerald-500 transition-colors appearance-none" required onchange="updateSubcategories()">
+                            <option value="">Selecione...</option>
+                            <option value="Moradia">Moradia</option>
+                            <option value="Carro">Carro</option>
+                            <option value="Transporte">Transporte</option>
+                            <option value="Alimentação">Alimentação</option>
+                            <option value="Eletrônicos">Eletrônicos</option>
+                            <option value="Serviços">Serviços</option>
+                            <option value="Saúde">Saúde</option>
+                            <option value="Educação">Educação</option>
+                            <option value="Pessoais">Pessoais</option>
+                            <option value="Lazer">Lazer</option>
+                            <option value="Financeiro">Financeiro</option>
+                            <option value="Pets">Pets</option>
+                            <option value="Família">Família</option>
+                            <option value="Crédito">Crédito</option>
+                            <option value="Presentes">Presentes</option>
+                            <option value="Documentação">Documentação</option>
+                            <option value="Salário">Salário</option>
+                            <option value="Renda extra">Renda extra</option>
+                            <option value="Benefícios">Benefícios</option>
+                            <option value="Outros">Outros</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-500 dark:text-slate-400 mb-1">Sub-categoria (Aba 2)</label>
+                        <select id="subcategoriaSelect" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 outline-none focus:border-emerald-500 transition-colors appearance-none disabled:opacity-50 disabled:cursor-not-allowed" disabled required>
+                            <option value="">Escolha a categoria primeiro</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-slate-500 dark:text-slate-400 mb-1">Data</label>
+                        <input type="date" id="txData" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 outline-none focus:border-emerald-500" required>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-500 dark:text-slate-400 mb-1">Conta / Cartão</label>
+                        <select id="txConta" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 outline-none focus:border-emerald-500">
+                            <option value="Itaú">Itaú</option>
+                            <option value="C6 Bank">C6 Bank</option>
+                            <option value="Uber">Uber</option>
+                            <option value="Amazon">Amazon</option>
+                            <option value="Conta Corrente">Conta Corrente</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <button type="button" class="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-3 px-4 rounded-xl shadow-md transition-colors mt-2" onclick="saveTransaction()">
+                    Salvar Lançamento
+                </button>
+            </form>
+        </div>
+    </div>
+    <script>
+        // --- MAPEAMENTO DE CATEGORIAS E SUBCATEGORIAS ---
+        const subcategoriasMap = {
+            "Moradia": ["Condomínio 🔒", "Energia elétrica 💡", "Água e esgoto 💦", "Gás 🔥", "Internet e telefone 🌐", "Manutenção e reparos 🔧", "Pequenas reformas 🛠️", "Utensílios de cozinha 🍽️", "Móveis e decoração 🛋️", "Enxoval de casa 🛏️", "Hidráulica 🚿", "Evolução de obra 🏗️", "Financiamento 🏦", "Seguro residencial 🏦"],
+            "Carro": ["Combustível ⛽", "Manutenção corretiva 🔧", "Limpeza e hienização 🧽", "Manutenção preventiva 🛠️", "Seguro auto 🛡️", "IPVA / Licenciamento 📄"],
+            "Transporte": ["Transporte por aplicativo 🚕", "Transporte público 🚌", "Estacionamento e pedágio 🅿️"],
+            "Alimentação": ["Supermercado 🛒", "Doces 🍫", "Hortifruti / Feira 🥦", "Padaria 🥖", "Restaurantes / Lanches 🍔", "Delivery 📦"],
+            "Eletrônicos": ["Celular 📱", "Informática 💻", "Televisão 📺", "Acessórios 🎧", "Eletroportáteis 🍳", "Eletrodomésticos 🧊"],
+            "Serviços": ["Assinaturas 🔗", "Serviços de nuvem ☁️", "Encanador 🚰", "Eletricista 💡", "Pedreiro 🧱", "Serviços gerais 🧹"],
+            "Saúde": ["Plano de saúde 🏥", "Consultas médicas 🩺", "Exames / Laboratórios 🧪", "Medicamentos 💊", "Odontologia 😁", "Terapias 🧠"],
+            "Educação": ["Faculdade 🎓", "Cursos livres / online 📚", "Material escolar / livros 📖"],
+            "Pessoais": ["Vestuário 👕", "Calçados 👟", "Acessórios ⌚", "Cabeleireiro 💇", "Cosméticos 💄", "Perfumes 🌸", "Cuidados pessoais 🧴", "Academia 🏋️"],
+            "Lazer": ["Bebidas / drinks 🍻", "Viagens ✈️", "Hospedagem 🏨", "Confraternização 🍽️", "Passeios 🌳", "Cinema / Teatro / Shows 🎬", "Streaming 📺", "Jogos / hobbies 🎮"],
+            "Financeiro": ["Empréstimos 💰", "Financiamentos 🏦", "Parcelamentos 🧾", "Investimentos 📈", "Tarifas bancárias 💸"],
+            "Pets": ["Ração 🐶", "Veterinário 🐾", "Medicamentos 💊", "Acessórios 🦴"],
+            "Família": ["Presentes 🎁", "Doações 🤝", "Terapia 🧠"],
+            "Crédito": ["Empréstimo de limite 💳", "Pix crédito 📲"],
+            "Presentes": ["Amigos 🎁"],
+            "Documentação": ["Documentos pessoais 📄", "Outros 🗂️"],
+            "Salário": ["Salário mensal 💰", "Adiantamento 💸"],
+            "Renda extra": ["Uber 🚕", "Vendas 📦", "Outros 🔄"],
+            "Benefícios": ["Vale alimentação 🍔", "Vale refeição 🍽️", "Vale transporte 🚌"],
+            "Outros": ["Outros 📦"]
+        };
+
+        // --- DADOS REAIS: 18 TURNOS UBER (Out/2026) ---
+        const uberShifts = [
+            { data: "2026-08-31", bruto: 65.0, km: 24.0, combustivel: 11.65, liquido: 44.51, minutos: 60, viagens: 3, consumo: 6.8 },
+            { data: "2026-09-03", bruto: 66.88, km: 36.0, combustivel: 15.63, liquido: 50.18, minutos: 102, viagens: 7, consumo: 7.6 },
+            { data: "2026-09-08", bruto: 54.64, km: 37.0, combustivel: 14.89, liquido: 38.88, minutos: 68, viagens: 4, consumo: 8.2 },
+            { data: "2026-09-11", bruto: 66.56, km: 34.0, combustivel: 15.21, liquido: 50.29, minutos: 100, viagens: 9, consumo: 7.6 },
+            { data: "2026-09-15", bruto: 48.9, km: 28.0, combustivel: 13.41, liquido: 34.71, minutos: 84, viagens: 6, consumo: 7.1 },
+            { data: "2026-09-18", bruto: 63.66, km: 35.0, combustivel: 15.66, liquido: 46.98, minutos: 96, viagens: 6, consumo: 7.6 },
+            { data: "2026-09-21", bruto: 57.07, km: 32.0, combustivel: 14.32, liquido: 41.84, minutos: 94, viagens: 7, consumo: 7.6 },
+            { data: "2026-09-22", bruto: 60.24, km: 37.0, combustivel: 18.26, liquido: 41.02, minutos: 94, viagens: 6, consumo: 7.8 },
+            { data: "2026-09-23", bruto: 63.38, km: 33.5, combustivel: 17.2, liquido: 45.17, minutos: 97, viagens: 7, consumo: 7.5 },
+            { data: "2026-09-24", bruto: 88.87, km: 45.0, combustivel: 19.41, liquido: 68.04, minutos: 126, viagens: 10, consumo: 8.0 },
+            { data: "2026-09-29", bruto: 67.28, km: 36.0, combustivel: 15.3, liquido: 50.9, minutos: 102, viagens: 7, consumo: 8.0 },
+            { data: "2026-09-30", bruto: 65.4, km: 39.0, combustivel: 15.17, liquido: 49.18, minutos: 85, viagens: 7, consumo: 9.0 },
+            { data: "2026-10-06", bruto: 50.39, km: 26.0, combustivel: 11.79, liquido: 37.79, minutos: 71, viagens: 6, consumo: 7.5 },
+            { data: "2026-10-07", bruto: 61.52, km: 25.5, combustivel: 11.26, liquido: 49.28, minutos: 70, viagens: 6, consumo: 7.7 },
+            { data: "2026-10-08", bruto: 65.68, km: 26.0, combustivel: 13.6, liquido: 51.03, minutos: 88, viagens: 7, consumo: 6.5 },
+            { data: "2026-10-09", bruto: 54.8, km: 20.0, combustivel: 9.71, liquido: 44.21, minutos: 60, viagens: 4, consumo: 7.0 },
+            { data: "2026-10-19", bruto: 37.78, km: 23.3, combustivel: 10.32, liquido: 26.86, minutos: 64, viagens: 5, consumo: 7.9 },
+            { data: "2026-10-20", bruto: 59.65, km: 32.0, combustivel: 14.36, liquido: 44.34, minutos: 90, viagens: 7, consumo: 7.8 }
+        ];
+
+        // --- DADOS REAIS: TRANSAÇÕES (Amostra principal + Lógica de carregamento) ---
+        // (No ambiente real, estes dados vêm do Supabase. Aqui simulamos o estado local com os dados CSV)
+        let transactions = [
+            { data: "2026-10-05", tipo: "receita", descricao: "Salário mensal", categoria: "Salário", subcategoria: "Salário mensal 💰", conta: "Itaú", valor: 2510.00, status: "pago" },
+            { data: "2026-10-07", tipo: "receita", descricao: "Vale alimentação", categoria: "Benefícios", subcategoria: "Vale alimentação 🍔", conta: "C6 Bank", valor: 682.00, status: "pago" },
+            { data: "2026-10-08", tipo: "receita", descricao: "Uber — lucro líquido", categoria: "Renda extra", subcategoria: "Uber 🚕", conta: "Uber", valor: 51.03, status: "pago" },
+            { data: "2026-10-10", tipo: "despesa", descricao: "Condominio", categoria: "Moradia", subcategoria: "Condomínio 🔒", conta: "Itaú", valor: 298.12, status: "pago" },
+            { data: "2026-10-28", tipo: "despesa", descricao: "IPVA e licenciamento", categoria: "Carro", subcategoria: "IPVA / Licenciamento 📄", conta: "C6 Bank", valor: 151.28, status: "pendente" }
+        ];
+
+        // --- FUNÇÕES DA INTERFACE ---
+        function updateSubcategories() {
+            const catSelect = document.getElementById("categoriaSelect");
+            const subSelect = document.getElementById("subcategoriaSelect");
+            const category = catSelect.value;
+            
+            subSelect.innerHTML = '<option value="">Selecione a subcategoria...</option>';
+            
+            if (category && subcategoriasMap[category]) {
+                subSelect.disabled = false;
+                subcategoriasMap[category].forEach(sub => {
+                    let opt = document.createElement('option');
+                    opt.value = sub;
+                    opt.textContent = sub;
+                    subSelect.appendChild(opt);
+                });
+            } else {
+                subSelect.disabled = true;
+                subSelect.innerHTML = '<option value="">Escolha a categoria primeiro</option>';
+            }
+        }
+
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            const activeTab = document.getElementById('tab-' + tabId);
+            if (activeTab) activeTab.classList.remove('hidden');
+            
+            document.querySelectorAll('.nav-item').forEach(el => {
+                el.classList.remove('bg-blue-50', 'dark:bg-blue-900/20', 'text-blue-600', 'dark:text-blue-400', 'font-medium', 'font-bold', 'text-emerald-500');
+                if (el.id !== 'nav-uber') {
+                    el.classList.add('text-slate-600', 'dark:text-slate-400');
+                } else {
+                    el.classList.add('text-slate-600', 'dark:text-slate-400'); 
+                }
+            });
+            
+            const activeNav = document.getElementById('nav-' + tabId);
+            if(activeNav) {
+                if(tabId === 'uber') {
+                    activeNav.classList.remove('text-slate-600', 'dark:text-slate-400');
+                    activeNav.classList.add('bg-blue-50', 'dark:bg-blue-900/20', 'text-blue-600', 'dark:text-blue-400', 'font-medium');
+                    renderUber();
+                } else {
+                    activeNav.classList.remove('text-slate-600', 'dark:text-slate-400');
+                    activeNav.classList.add('font-bold', 'text-emerald-500', 'bg-slate-100', 'dark:bg-slate-800');
+                    if (tabId === 'dashboard') renderDashboard();
+                    if (tabId === 'transactions') renderTransactions();
+                }
+            }
+        }
+
+        function openModal(id) { document.getElementById(id).classList.remove('hidden'); }
+        function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
+
+        const themeToggleBtn = document.getElementById('themeToggle');
+        const themeIcon = document.getElementById('themeIcon');
+        themeToggleBtn.addEventListener('click', () => {
+            document.documentElement.classList.toggle('dark');
+            if (document.documentElement.classList.contains('dark')) {
+                themeIcon.classList.remove('fa-moon');
+                themeIcon.classList.add('fa-sun');
+            } else {
+                themeIcon.classList.remove('fa-sun');
+                themeIcon.classList.add('fa-moon');
+            }
+        });
+
+        // Seleção de Tipo no Modal
+        document.querySelectorAll('.type-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                document.querySelectorAll('.type-btn').forEach(b => {
+                    b.classList.remove('active', 'border-rose-500', 'bg-rose-50', 'text-rose-600', 'border-emerald-500', 'bg-emerald-50', 'text-emerald-600');
+                    b.classList.add('border-transparent', 'bg-slate-100', 'text-slate-500');
+                });
+                
+                this.classList.remove('border-transparent', 'bg-slate-100', 'text-slate-500');
+                this.classList.add('active');
+                
+                if(this.dataset.type === 'expense') {
+                    this.classList.add('border-rose-500', 'bg-rose-50', 'text-rose-600');
+                } else {
+                    this.classList.add('border-emerald-500', 'bg-emerald-50', 'text-emerald-600');
+                }
+            });
+        });
+
+        // --- FUNÇÕES DE RENDERIZAÇÃO ---
+        function formatCurrency(value) {
+            return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
+        }
+
+        function renderUber() {
+            let totalLiquido = 0, totalCombustivel = 0, totalKm = 0, totalMinutos = 0, totalViagens = 0, totalBruto = 0;
+            const tbody = document.getElementById('uberList');
+            tbody.innerHTML = '';
+
+            uberShifts.forEach(shift => {
+                totalLiquido += shift.liquido;
+                totalCombustivel += shift.combustivel;
+                totalKm += shift.km;
+                totalMinutos += shift.minutos;
+                totalViagens += shift.viagens;
+                totalBruto += shift.bruto;
+
+                tbody.innerHTML += `
+                    <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                        <td class="px-6 py-4">${shift.data.split('-').reverse().join('/')}</td>
+                        <td class="px-6 py-4">${formatCurrency(shift.bruto)}</td>
+                        <td class="px-6 py-4">${shift.km} km</td>
+                        <td class="px-6 py-4 text-rose-500">-${formatCurrency(shift.combustivel)}</td>
+                        <td class="px-6 py-4 font-bold text-emerald-500 text-right">${formatCurrency(shift.liquido)}</td>
+                    </tr>
+                `;
+            });
+
+            const horas = totalMinutos / 60;
+            const rendHora = totalLiquido / horas;
+            const margem = (totalLiquido / totalBruto) * 100;
+            const mediaConsumo = totalKm / (totalCombustivel / 3.45); // Estimativa de litros com R$3.45
+
+            document.getElementById('uber-liquido').textContent = formatCurrency(totalLiquido);
+            document.getElementById('uber-margem').textContent = `Margem de ${margem.toFixed(1)}% (Bruto: ${formatCurrency(totalBruto)})`;
+            document.getElementById('uber-hora').textContent = `${formatCurrency(rendHora)}/h`;
+            document.getElementById('uber-tempo').textContent = `${horas.toFixed(1)} horas online`;
+            document.getElementById('uber-combustivel').textContent = formatCurrency(totalCombustivel);
+            document.getElementById('uber-consumo').textContent = `Média ${mediaConsumo.toFixed(1)} km/L`;
+            document.getElementById('uber-km').textContent = `${totalKm.toFixed(1)} km`;
+            document.getElementById('uber-viagens').textContent = `${totalViagens} viagens`;
+        }
+
+        function renderTransactions() {
+            const tbody = document.getElementById('transactionsList');
+            tbody.innerHTML = '';
+            
+            transactions.forEach(tx => {
+                const isIncome = tx.tipo === 'receita';
+                const statusBadge = tx.status === 'pago' 
+                    ? `<span class="px-2 py-1 bg-emerald-100 text-emerald-700 rounded-lg text-xs">Pago</span>`
+                    : `<span class="px-2 py-1 bg-amber-100 text-amber-700 rounded-lg text-xs">Pendente</span>`;
+                    
+                tbody.innerHTML += `
+                    <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                        <td class="px-6 py-4 whitespace-nowrap text-slate-500">${tx.data.split('-').reverse().join('/')}</td>
+                        <td class="px-6 py-4 font-medium">${tx.descricao}</td>
+                        <td class="px-6 py-4"><span class="bg-slate-100 dark:bg-slate-800 px-3 py-1 rounded-full text-xs">${tx.subcategoria || tx.categoria}</span></td>
+                        <td class="px-6 py-4 text-slate-500">${tx.conta}</td>
+                        <td class="px-6 py-4 text-right font-bold ${isIncome ? 'text-emerald-500' : 'text-slate-800 dark:text-white'}">
+                            ${isIncome ? '+' : '-'}${formatCurrency(tx.valor)}
+                        </td>
+                        <td class="px-6 py-4 text-center">${statusBadge}</td>
+                    </tr>
+                `;
+            });
+        }
+
+        function renderDashboard() {
+            let rec = 0, desp = 0;
+            transactions.forEach(tx => {
+                if (tx.tipo === 'receita') rec += tx.valor;
+                if (tx.tipo === 'despesa') desp += tx.valor;
+            });
+            
+            document.getElementById('dash-saldo').textContent = formatCurrency(rec - desp);
+            document.getElementById('dash-receitas').textContent = formatCurrency(rec);
+            document.getElementById('dash-despesas').textContent = formatCurrency(desp);
+
+            // Gráfico de Projeção
+            const ctx = document.getElementById('projectionChart');
+            if (window.projChart) window.projChart.destroy();
+            
+            window.projChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: ['Out', 'Nov', 'Dez', 'Jan'],
+                    datasets: [{
+                        label: 'Projeção de Saldo (R$)',
+                        data: [rec - desp, (rec - desp) - 1500, (rec - desp) - 1200, (rec - desp) + 500],
+                        borderColor: '#10b981',
+                        backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                        fill: true,
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: { y: { beginAtZero: false } }
+                }
+            });
+        }
+
+        // Inicializar
+        switchTab('uber');
+
+    </script>
 </body>
 </html>
