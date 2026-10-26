@@ -227,7 +227,7 @@
                     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                         <div class="relative">
                             <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-3 text-slate-400 text-xs"></i>
-                            <input type="text" id="txSearch" oninput="renderTransactions()" placeholder="Buscar descrição..." class="w-full pl-9 pr-3 py-2 bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 rounded-xl text-xs outline-none focus:border-emerald-500">
+                            <input type="text" id="txSearch" oninput="renderTransactions()" placeholder="Buscar descrição ou subcategoria..." class="w-full pl-9 pr-3 py-2 bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 rounded-xl text-xs outline-none focus:border-emerald-500">
                         </div>
                         <select id="txCategoryFilter" onchange="onFilterCategoryChange()" class="bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs outline-none">
                             <option value="all">Todas as Categorias</option>
@@ -357,15 +357,17 @@
         </div>
     </main>
 
-    <!-- ================= MODAL 1: NOVO LANÇAMENTO FINANCEIRO ================= -->
+    <!-- ================= MODAL 1: CRIAR / EDITAR LANÇAMENTO FINANCEIRO ================= -->
     <div id="transactionModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
         <div class="bg-white dark:bg-darkCard w-full max-w-lg rounded-2xl shadow-2xl p-6 border border-slate-200 dark:border-slate-700 max-h-[92vh] overflow-y-auto">
             <div class="flex justify-between items-center mb-5">
-                <h3 class="text-lg font-extrabold">Novo Lançamento Financeiro</h3>
+                <h3 id="transactionModalTitle" class="text-lg font-extrabold">Novo Lançamento Financeiro</h3>
                 <button onclick="closeModal('transactionModal')" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
             </div>
 
             <form id="transactionForm" onsubmit="saveTransaction(event)" class="space-y-4">
+                <input type="hidden" id="editingTxId" value="">
+
                 <!-- Tipo: Despesa vs Receita -->
                 <div class="grid grid-cols-2 gap-3">
                     <button type="button" id="btnTypeExpense" onclick="setModalTxType('despesa')" class="py-2.5 rounded-xl border-2 border-rose-500 bg-rose-50 dark:bg-rose-900/20 text-rose-600 font-bold text-xs flex items-center justify-center gap-2">
@@ -392,7 +394,7 @@
                     <input type="text" id="txDescricao" required placeholder="Ex: Supermercado, Condomínio, Salário..." class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-xs outline-none focus:border-emerald-500">
                 </div>
 
-                <!-- Duas Abas/Campos Encadeados: Categoria (Coluna E) e Subcategoria (Coluna F) -->
+                <!-- Duas Abas Encadeadas da Planilha New Categorias -->
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200/70 dark:border-slate-700">
                     <div>
                         <label class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">1. Categoria</label>
@@ -409,12 +411,13 @@
                         <label class="block text-xs font-semibold text-slate-500 mb-1">Conta</label>
                         <select id="txConta" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs outline-none">
                             <option value="Itaú">Itaú</option>
+                            <option value="Itaú - Pix">Itaú - Pix</option>
                             <option value="C6 Bank">C6 Bank</option>
                             <option value="Nubank">Nubank</option>
                             <option value="Amazon">Amazon</option>
                             <option value="Uber">Uber</option>
                             <option value="Pix">Pix</option>
-                            <option value="Transferência bancária">Transferência</option>
+                            <option value="Transferência bancária">Transferência bancária</option>
                         </select>
                     </div>
                     <div>
@@ -422,11 +425,12 @@
                         <select id="txForma" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs outline-none">
                             <option value="Itaú - Crédito">Itaú - Crédito</option>
                             <option value="Itaú - Pix">Itaú - Pix</option>
+                            <option value="Itaú - Débito">Itaú - Débito</option>
                             <option value="C6 Bank - Crédito">C6 Bank - Crédito</option>
                             <option value="Nubank - Crédito">Nubank - Crédito</option>
                             <option value="Amazon - Crédito">Amazon - Crédito</option>
                             <option value="Pix">Pix</option>
-                            <option value="Transferência bancária">Transferência</option>
+                            <option value="Transferência bancária">Transferência bancária</option>
                         </select>
                     </div>
                     <div>
@@ -438,7 +442,7 @@
                     </div>
                 </div>
 
-                <button type="submit" class="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-3 rounded-xl shadow-md transition-colors text-sm">
+                <button type="submit" id="txSubmitBtn" class="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-3 rounded-xl shadow-md transition-colors text-sm">
                     Salvar Lançamento
                 </button>
             </form>
@@ -506,26 +510,71 @@
     </div>
     <script>
         // ============================================================================
-        // 1. ÁRVORE EXATA DA PLANILHA "Controle de gastos -2026" (Colunas E e F)
+        // 1. ESTRUTURA EXATA E EXCLUSIVA DA PLANILHA "New Categorias" (A1:B85)
         // ============================================================================
         const expenseCategoriesMap = {
-            "Moradia": ["Condomínio 🔒", "Energia elétrica 💡", "Água e esgoto 💦", "Gás 🔥", "Internet e telefone 🌐", "Manutenção e reparos 🔧", "Pequenas reformas 🛠️", "Utensílios de cozinha 🍽️", "Móveis e decoração 🛋️", "Enxoval de casa 🛏️", "Hidráulica 🚿", "Evolução de obra 🏗️", "Financiamento 🏦", "Seguro residencial 🏦"],
-            "Carro": ["Combustível ⛽", "Manutenção corretiva 🔧", "Limpeza e hienização 🧽", "Manutenção preventiva 🛠️", "Seguro auto 🛡️", "IPVA / Licenciamento 📄"],
-            "Transporte": ["Transporte por aplicativo 🚕", "Transporte público 🚌", "Estacionamento e pedágio 🅿️"],
-            "Alimentação": ["Supermercado 🛒", "Doces 🍫", "Hortifruti / Feira 🥦", "Padaria 🥖", "Restaurantes / Lanches 🍔", "Delivery 📦"],
-            "Eletrônicos": ["Celular 📱", "Informática 💻", "Televisão 📺", "Acessórios 🎧", "Eletroportáteis 🍳", "Eletrodomésticos 🧊"],
-            "Serviços": ["Assinaturas 🔗", "Serviços de nuvem ☁️", "Encanador 🚰", "Eletricista 💡", "Pedreiro 🧱", "Serviços gerais 🧹"],
-            "Saúde": ["Plano de saúde 🏥", "Consultas médicas 🩺", "Exames / Laboratórios 🧪", "Medicamentos 💊", "Odontologia 😁", "Terapias 🧠"],
-            "Educação": ["Faculdade 🎓", "Cursos livres / online 📚", "Material escolar / livros 📖"],
-            "Pessoais": ["Vestuário 👕", "Calçados 👟", "Acessórios ⌚", "Cabeleireiro 💇", "Cosméticos 💄", "Perfumes 🌸", "Cuidados pessoais 🧴", "Academia 🏋️"],
-            "Lazer": ["Bebidas / drinks 🍻", "Viagens ✈️", "Hospedagem 🏨", "Confraternização 🍽️", "Passeios 🌳", "Cinema / Teatro / Shows 🎬", "Streaming 📺", "Jogos / hobbies 🎮"],
-            "Financeiro": ["Empréstimos 💰", "Financiamentos 🏦", "Parcelamentos 🧾", "Investimentos 📈", "Tarifas bancárias 💸"],
-            "Pets": ["Ração 🐶", "Veterinário 🐾", "Medicamentos 💊", "Acessórios 🦴"],
-            "Família": ["Presentes 🎁", "Doações 🤝", "Terapia 🧠"],
-            "Crédito": ["Empréstimo de limite 💳", "Pix crédito 📲"],
-            "Presentes": ["Amigos 🎁"],
-            "Documentação": ["Documentos pessoais 📄", "Outros 🗂️"],
-            "Outros": ["Outros 📦"]
+            "Moradia": [
+                "Condomínio 🔒", "Energia elétrica 💡", "Água e esgoto 💦", "Gás 🔥",
+                "Internet e telefone 🌐", "Manutenção e reparos 🔧", "Pequenas reformas 🛠️",
+                "Utensílios de cozinha 🍽️", "Móveis e decoração 🛋️", "Enxoval de casa 🛏️",
+                "Hidráulica 🚿", "Evolução de obra 🏗️", "Financiamento 🏦", "Seguro residencial 🏦"
+            ],
+            "Carro": [
+                "Combustível ⛽", "Manutenção corretiva 🔧", "Limpeza e hienização 🧽",
+                "Manutenção preventiva 🛠️", "Seguro auto 🛡️", "IPVA / Licenciamento 📄"
+            ],
+            "Transporte": [
+                "Transporte por aplicativo 🚕", "Transporte público 🚌", "Estacionamento e pedágio 🅿️"
+            ],
+            "Alimentação": [
+                "Supermercado 🛒", "Doces 🍫", "Hortifruti / Feira 🥦",
+                "Padaria 🥖", "Restaurantes / Lanches 🍔", "Delivery 📦"
+            ],
+            "Eletrônicos": [
+                "Celular 📱", "Informática 💻", "Televisão 📺",
+                "Acessórios 🎧", "Eletroportáteis 🍳", "Eletrodomésticos 🧊"
+            ],
+            "Serviços": [
+                "Assinaturas 🔗", "Serviços de nuvem ☁️", "Encanador 🚰",
+                "Eletricista 💡", "Pedreiro 🧱", "Serviços gerais 🧹"
+            ],
+            "Saúde": [
+                "Plano de saúde 🏥", "Consultas médicas 🩺", "Exames / Laboratórios 🧪",
+                "Medicamentos 💊", "Odontologia 😁", "Terapias 🧠"
+            ],
+            "Educação": [
+                "Faculdade 🎓", "Cursos livres / online 📚", "Material escolar / livros 📖"
+            ],
+            "Pessoais": [
+                "Vestuário 👕", "Calçados 👟", "Acessórios ⌚", "Cabeleireiro 💇",
+                "Cosméticos 💄", "Perfumes 🌸", "Cuidados pessoais 🧴", "Academia 🏋️"
+            ],
+            "Lazer": [
+                "Bebidas / drinks 🍻", "Viagens ✈️", "Hospedagem 🏨", "Confraternização 🍽️",
+                "Passeios 🌳", "Cinema / Teatro / Shows 🎬", "Streaming 📺", "Jogos / hobbies 🎮"
+            ],
+            "Financeiro": [
+                "Empréstimos 💰", "Financiamentos 🏦", "Parcelamentos 🧾",
+                "Investimentos 📈", "Tarifas bancárias 💸"
+            ],
+            "Pets": [
+                "Ração 🐶", "Veterinário 🐾", "Medicamentos 💊", "Acessórios 🦴"
+            ],
+            "Família": [
+                "Presentes 🎁", "Doações 🤝", "Terapia 🧠"
+            ],
+            "Crédito": [
+                "Empréstimo de limite 💳", "Pix crédito 📲"
+            ],
+            "Presentes": [
+                "Amigos 🎁"
+            ],
+            "Documentação": [
+                "Documentos pessoais 📄", "Outros 🗂️"
+            ],
+            "Outros": [
+                "Outros 📦"
+            ]
         };
 
         const incomeCategoriesMap = {
@@ -536,67 +585,8 @@
             "Outros": ["Outros ganhos 📦"]
         };
 
-        // Inferência automática de Subcategoria com Emoji para os 169 itens vindos do CSV
-        function inferSubcategory(cat, desc, tipo) {
-            const d = (desc || '').toLowerCase();
-            if (tipo === 'receita') {
-                if (d.includes('uber')) return 'Uber — lucro líquido 🚕';
-                if (d.includes('vale')) return 'Vale alimentação 🛒';
-                if (d.includes('pis')) return 'PIS / Abono 🏦';
-                if (cat === 'Reembolso' || d.includes('reembolso')) return 'Reembolso geral 🔄';
-                if (cat === 'Salário') return 'Salário mensal 💰';
-                return 'Outros ganhos 📦';
-            }
-            if (cat === 'Moradia') {
-                if (d.includes('condom')) return 'Condomínio 🔒';
-                if (d.includes('energia')) return 'Energia elétrica 💡';
-                if (d.includes('gás') || d.includes('gas')) return 'Gás 🔥';
-                if (d.includes('vivo') || d.includes('internet')) return 'Internet e telefone 🌐';
-                return 'Manutenção e reparos 🔧';
-            }
-            if (cat === 'Carro') {
-                if (d.includes('etanol') || d.includes('combust')) return 'Combustível ⛽';
-                if (d.includes('seguro')) return 'Seguro auto 🛡️';
-                if (d.includes('ipva')) return 'IPVA / Licenciamento 📄';
-                return 'Manutenção corretiva 🔧';
-            }
-            if (cat === 'Alimentação') {
-                if (d.includes('dispesa') || d.includes('mercado')) return 'Supermercado 🛒';
-                if (d.includes('pão') || d.includes('requeij')) return 'Padaria 🥖';
-                if (d.includes('chocolate') || d.includes('doc') || d.includes('sorvete') || d.includes('carolina') || d.includes('trufa') || d.includes('brigadeiro') || d.includes('bolo') || d.includes('brownie') || d.includes('açaí') || d.includes('snickers') || d.includes('kinder') || d.includes('cokies') || d.includes('casquinha') || d.includes('colosso')) return 'Doces 🍫';
-                return 'Restaurantes / Lanches 🍔';
-            }
-            if (cat === 'Eletrônicos') {
-                if (d.includes('fogão')) return 'Eletrodomésticos 🧊';
-                if (d.includes('monitor') || d.includes('memoria')) return 'Informática 💻';
-                return 'Acessórios 🎧';
-            }
-            if (cat === 'Serviços') {
-                if (d.includes('icloud')) return 'Serviços de nuvem ☁️';
-                return 'Assinaturas 🔗';
-            }
-            if (cat === 'Pessoais') {
-                if (d.includes('tenis')) return 'Calçados 👟';
-                return 'Vestuário 👕';
-            }
-            if (cat === 'Pets') return 'Ração 🐶';
-            if (cat === 'Financeiro') {
-                if (d.includes('taxa')) return 'Tarifas bancárias 💸';
-                if (d.includes('emprest')) return 'Empréstimos 💰';
-                return 'Parcelamentos 🧾';
-            }
-            if (cat === 'Lazer') {
-                if (d.includes('bebida')) return 'Bebidas / drinks 🍻';
-                if (d.includes('churrasco')) return 'Confraternização 🍽️';
-                return 'Passeios 🌳';
-            }
-            if (cat === 'Família') return 'Presentes 🎁';
-            if (cat === 'Presentes') return 'Amigos 🎁';
-            return (expenseCategoriesMap[cat] && expenseCategoriesMap[cat][0]) || 'Outros 📦';
-        }
-
         // ============================================================================
-        // 2. BASE DE DADOS COMPLETA: 18 TURNOS UBER + 169 TRANSAÇÕES
+        // 2. BASE DE DADOS: 18 TURNOS UBER + 169 TRANSAÇÕES JÁ CLASSIFICADAS
         // ============================================================================
         const defaultUberShifts = [
             {data:"2026-08-31",viagens:3,minutos:60,bruto:65.0,extra:0,km:24.0,consumo:6.8,precoComb:3.3,custoComb:11.65,manut:7.8,seguro:1.04,liquido:44.51},
@@ -619,176 +609,176 @@
             {data:"2026-10-20",viagens:7,minutos:90,bruto:59.65,extra:0,km:32.0,consumo:7.8,precoComb:3.5,custoComb:14.36,manut:0,seguro:0.95,liquido:44.34}
         ];
 
-        const rawTransactions = [
-            {data:'2025-09-06',tipo:'despesa',descricao:'Fogão Dako',categoria:'Eletrônicos',conta:'Itaú',valor:76.76,status:'pago'},
-            {data:'2025-10-06',tipo:'despesa',descricao:'Fogão Dako',categoria:'Eletrônicos',conta:'Itaú',valor:76.76,status:'pago'},
-            {data:'2025-11-06',tipo:'despesa',descricao:'Fogão Dako',categoria:'Eletrônicos',conta:'Itaú',valor:76.76,status:'pago'},
-            {data:'2025-12-06',tipo:'despesa',descricao:'Fogão Dako',categoria:'Eletrônicos',conta:'Itaú',valor:76.76,status:'pago'},
-            {data:'2026-01-06',tipo:'despesa',descricao:'Fogão Dako',categoria:'Eletrônicos',conta:'Itaú',valor:76.76,status:'pago'},
-            {data:'2026-08-25',tipo:'despesa',descricao:'Folha de EVA',categoria:'Outros',conta:'Itaú',valor:1.99,status:'pago'},
-            {data:'2026-08-26',tipo:'despesa',descricao:'Carolinas (200g)',categoria:'Alimentação',conta:'Itaú',valor:16.16,status:'pago'},
-            {data:'2026-08-28',tipo:'despesa',descricao:'Bebidas',categoria:'Alimentação',conta:'Itaú',valor:15.8,status:'pago'},
-            {data:'2026-08-28',tipo:'receita',descricao:'PIS',categoria:'Outros',conta:'Transferência bancária',valor:1480.0,status:'pago'},
-            {data:'2026-08-28',tipo:'despesa',descricao:'Etanol 3,29 l',categoria:'Carro',conta:'C6 Bank',valor:50.0,status:'pago'},
-            {data:'2026-08-28',tipo:'despesa',descricao:'Barra de chocolate',categoria:'Alimentação',conta:'Itaú',valor:11.99,status:'pago'},
-            {data:'2026-08-28',tipo:'receita',descricao:'Rendimento Uber',categoria:'Renda extra',conta:'Pix',valor:380.0,status:'pago'},
-            {data:'2026-08-28',tipo:'despesa',descricao:'Fogão 4 bocas',categoria:'Eletrônicos',conta:'Itaú',valor:76.76,status:'pago'},
-            {data:'2026-08-28',tipo:'despesa',descricao:'Tenis Adidas (2 uni)',categoria:'Pessoais',conta:'Itaú',valor:52.63,status:'pago'},
-            {data:'2026-08-28',tipo:'despesa',descricao:'Calça',categoria:'Pessoais',conta:'Itaú',valor:53.33,status:'pago'},
-            {data:'2026-08-28',tipo:'despesa',descricao:'Manopla do Cambio',categoria:'Carro',conta:'Itaú',valor:23.15,status:'pago'},
-            {data:'2026-08-28',tipo:'despesa',descricao:'Spotify',categoria:'Serviços',conta:'Itaú - Pix',valor:10.0,status:'pago'},
-            {data:'2026-08-28',tipo:'despesa',descricao:'Freio, bico e troca de manopla',categoria:'Carro',conta:'C6 Bank',valor:250.39,status:'pago'},
-            {data:'2026-08-28',tipo:'despesa',descricao:'Parcelamento de fatura',categoria:'Financeiro',conta:'C6 Bank',valor:236.56,status:'pago'},
-            {data:'2026-08-28',tipo:'despesa',descricao:'IPVA e licenciamento',categoria:'Carro',conta:'C6 Bank',valor:151.28,status:'pago'},
-            {data:'2026-08-28',tipo:'despesa',descricao:'Taxa parcelamento Zul',categoria:'Financeiro',conta:'C6 Bank',valor:38.36,status:'pago'},
-            {data:'2026-08-28',tipo:'despesa',descricao:'Fone de ouvido',categoria:'Eletrônicos',conta:'C6 Bank',valor:34.7,status:'pago'},
-            {data:'2026-08-28',tipo:'despesa',descricao:'Kit de perfume',categoria:'Família',conta:'C6 Bank',valor:47.47,status:'pago'},
-            {data:'2026-09-28',tipo:'despesa',descricao:'Ração das dogs',categoria:'Pets',conta:'Nubank',valor:74.59,status:'pago'},
-            {data:'2026-08-28',tipo:'receita',descricao:'Vale alimentação',categoria:'Outros',conta:'Transferência bancária',valor:682.0,status:'pago'},
-            {data:'2026-08-28',tipo:'despesa',descricao:'Sorvete no cascão',categoria:'Alimentação',conta:'Itaú',valor:7.0,status:'pago'},
-            {data:'2026-08-29',tipo:'despesa',descricao:'Mini pizza',categoria:'Alimentação',conta:'Itaú',valor:36.0,status:'pago'},
-            {data:'2026-08-29',tipo:'despesa',descricao:'Sorvete',categoria:'Alimentação',conta:'Itaú',valor:7.0,status:'pago'},
-            {data:'2026-08-29',tipo:'despesa',descricao:'Massa com frango crocante',categoria:'Alimentação',conta:'Itaú',valor:48.98,status:'pago'},
-            {data:'2026-08-30',tipo:'despesa',descricao:'Pedaço de bolo - ninho com avelã',categoria:'Alimentação',conta:'Itaú',valor:22.0,status:'pago'},
-            {data:'2026-08-30',tipo:'despesa',descricao:'Tobogã',categoria:'Lazer',conta:'Itaú - Pix',valor:40.0,status:'pago'},
-            {data:'2026-08-30',tipo:'receita',descricao:'Reembolso - tobogã',categoria:'Reembolso',conta:'Pix',valor:10.0,status:'pago'},
-            {data:'2026-08-31',tipo:'receita',descricao:'Pag. Minoxidil (Ivan)',categoria:'Reembolso',conta:'Pix',valor:44.0,status:'pago'},
-            {data:'2026-08-31',tipo:'receita',descricao:'Tobogã (mãe e gata)',categoria:'Reembolso',conta:'Pix',valor:20.0,status:'pago'},
-            {data:'2026-09-01',tipo:'despesa',descricao:'Snickers',categoria:'Alimentação',conta:'Itaú',valor:4.59,status:'pago'},
-            {data:'2026-09-01',tipo:'despesa',descricao:'Pão',categoria:'Alimentação',conta:'Itaú',valor:3.01,status:'pago'},
-            {data:'2026-09-02',tipo:'despesa',descricao:'Almoço',categoria:'Alimentação',conta:'Itaú',valor:48.98,status:'pago'},
-            {data:'2026-09-02',tipo:'despesa',descricao:'Etanol - 3,29',categoria:'Carro',conta:'Itaú',valor:124.63,status:'pago'},
-            {data:'2026-09-03',tipo:'receita',descricao:'Uber - corrida do dia',categoria:'Renda extra',conta:'Pix',valor:51.25,status:'pago'},
-            {data:'2026-09-04',tipo:'despesa',descricao:'Sorvete',categoria:'Alimentação',conta:'Itaú',valor:10.99,status:'pago'},
-            {data:'2026-09-04',tipo:'despesa',descricao:'Combo de lanche',categoria:'Alimentação',conta:'Itaú - Pix',valor:27.45,status:'pago'},
-            {data:'2026-09-04',tipo:'despesa',descricao:'Parmegiana de frango',categoria:'Alimentação',conta:'Itaú',valor:32.0,status:'pago'},
-            {data:'2026-09-05',tipo:'despesa',descricao:'Combo de lanche',categoria:'Alimentação',conta:'Itaú',valor:50.9,status:'pago'},
-            {data:'2026-09-06',tipo:'despesa',descricao:'Lanche',categoria:'Alimentação',conta:'Itaú',valor:33.0,status:'pago'},
-            {data:'2026-09-07',tipo:'despesa',descricao:'Consumo de gás',categoria:'Moradia',conta:'Itaú - Pix',valor:60.16,status:'pago'},
-            {data:'2026-09-08',tipo:'receita',descricao:'Uber - corrida do dia',categoria:'Renda extra',conta:'Pix',valor:39.75,status:'pago'},
-            {data:'2026-09-10',tipo:'despesa',descricao:'Dispesa mensal',categoria:'Alimentação',conta:'Itaú',valor:430.0,status:'pago'},
-            {data:'2026-09-11',tipo:'receita',descricao:'Uber - corrida do dia',categoria:'Renda extra',conta:'Pix',valor:51.35,status:'pago'},
-            {data:'2026-09-28',tipo:'despesa',descricao:'Fogão 4 bocas',categoria:'Eletrônicos',conta:'Itaú',valor:76.76,status:'pago'},
-            {data:'2026-09-28',tipo:'despesa',descricao:'Calça',categoria:'Pessoais',conta:'Itaú',valor:53.33,status:'pago'},
-            {data:'2026-09-28',tipo:'despesa',descricao:'Manopla do Cambio',categoria:'Carro',conta:'Itaú',valor:23.15,status:'pago'},
-            {data:'2026-09-28',tipo:'despesa',descricao:'Freio, bico e troca de manopla',categoria:'Carro',conta:'C6 Bank',valor:250.39,status:'pago'},
-            {data:'2026-09-28',tipo:'despesa',descricao:'Parcelamento de fatura',categoria:'Financeiro',conta:'C6 Bank',valor:236.56,status:'pago'},
-            {data:'2026-09-28',tipo:'despesa',descricao:'IPVA e licenciamento',categoria:'Carro',conta:'C6 Bank',valor:151.28,status:'pago'},
-            {data:'2026-09-28',tipo:'despesa',descricao:'Taxa parcelamento Zul',categoria:'Financeiro',conta:'C6 Bank',valor:38.36,status:'pago'},
-            {data:'2026-09-28',tipo:'despesa',descricao:'Fone de ouvido',categoria:'Eletrônicos',conta:'C6 Bank',valor:34.7,status:'pago'},
-            {data:'2026-09-28',tipo:'despesa',descricao:'Kit de perfume',categoria:'Família',conta:'C6 Bank',valor:47.47,status:'pago'},
-            {data:'2026-10-28',tipo:'despesa',descricao:'Fogão 4 bocas',categoria:'Eletrônicos',conta:'Itaú',valor:76.76,status:'pendente'},
-            {data:'2026-10-28',tipo:'despesa',descricao:'Freio, bico e troca de manopla',categoria:'Carro',conta:'C6 Bank',valor:250.39,status:'pendente'},
-            {data:'2026-10-28',tipo:'despesa',descricao:'Parcelamento de fatura',categoria:'Financeiro',conta:'C6 Bank',valor:236.56,status:'pendente'},
-            {data:'2026-10-28',tipo:'despesa',descricao:'IPVA e licenciamento',categoria:'Carro',conta:'C6 Bank',valor:151.28,status:'pendente'},
-            {data:'2026-10-28',tipo:'despesa',descricao:'Taxa parcelamento Zul',categoria:'Financeiro',conta:'C6 Bank',valor:38.36,status:'pendente'},
-            {data:'2026-11-28',tipo:'despesa',descricao:'Fogão 4 bocas',categoria:'Eletrônicos',conta:'Itaú',valor:76.76,status:'pendente'},
-            {data:'2026-11-28',tipo:'despesa',descricao:'Freio, bico e troca de manopla',categoria:'Carro',conta:'C6 Bank',valor:250.39,status:'pendente'},
-            {data:'2026-12-28',tipo:'despesa',descricao:'Fogão 4 bocas',categoria:'Eletrônicos',conta:'Itaú',valor:76.76,status:'pendente'},
-            {data:'2027-01-28',tipo:'despesa',descricao:'Fogão 4 bocas',categoria:'Eletrônicos',conta:'Itaú',valor:76.76,status:'pendente'},
-            {data:'2026-09-14',tipo:'despesa',descricao:'Seguro Auto',categoria:'Carro',conta:'Itaú',valor:147.47,status:'pago'},
-            {data:'2026-10-14',tipo:'despesa',descricao:'Seguro Auto',categoria:'Carro',conta:'Itaú',valor:147.47,status:'pago'},
-            {data:'2026-11-14',tipo:'despesa',descricao:'Seguro Auto',categoria:'Carro',conta:'Itaú',valor:147.47,status:'pendente'},
-            {data:'2026-12-14',tipo:'despesa',descricao:'Seguro Auto',categoria:'Carro',conta:'Itaú',valor:147.47,status:'pendente'},
-            {data:'2027-01-14',tipo:'despesa',descricao:'Seguro Auto',categoria:'Carro',conta:'Itaú',valor:147.47,status:'pendente'},
-            {data:'2027-02-14',tipo:'despesa',descricao:'Seguro Auto',categoria:'Carro',conta:'Itaú',valor:147.47,status:'pendente'},
-            {data:'2027-03-14',tipo:'despesa',descricao:'Seguro Auto',categoria:'Carro',conta:'Itaú',valor:147.47,status:'pendente'},
-            {data:'2027-04-14',tipo:'despesa',descricao:'Seguro Auto',categoria:'Carro',conta:'Itaú',valor:147.47,status:'pendente'},
-            {data:'2027-05-14',tipo:'despesa',descricao:'Seguro Auto',categoria:'Carro',conta:'Itaú',valor:147.47,status:'pendente'},
-            {data:'2027-06-14',tipo:'despesa',descricao:'Seguro Auto',categoria:'Carro',conta:'Itaú',valor:147.47,status:'pendente'},
-            {data:'2026-09-15',tipo:'despesa',descricao:'Cokies',categoria:'Alimentação',conta:'Itaú',valor:13.9,status:'pago'},
-            {data:'2026-09-15',tipo:'receita',descricao:'Uber — lucro líquido',categoria:'Renda extra',conta:'Uber',valor:34.71,status:'pago'},
-            {data:'2026-10-07',tipo:'despesa',descricao:'Cone de kinder',categoria:'Alimentação',conta:'Itaú',valor:6.0,status:'pago'},
-            {data:'2026-09-17',tipo:'despesa',descricao:'Carolinas de chocolate',categoria:'Alimentação',conta:'Itaú',valor:6.63,status:'pago'},
-            {data:'2026-09-18',tipo:'receita',descricao:'Uber — lucro líquido',categoria:'Renda extra',conta:'Uber',valor:46.98,status:'pago'},
-            {data:'2026-09-19',tipo:'despesa',descricao:'Temaki',categoria:'Alimentação',conta:'Itaú',valor:37.9,status:'pago'},
-            {data:'2026-09-17',tipo:'despesa',descricao:'Pão',categoria:'Alimentação',conta:'Itaú',valor:3.12,status:'pago'},
-            {data:'2026-09-16',tipo:'despesa',descricao:'Monitor Samsung',categoria:'Eletrônicos',conta:'Itaú',valor:30.48,status:'pago'},
-            {data:'2026-10-16',tipo:'despesa',descricao:'Monitor Samsung',categoria:'Eletrônicos',conta:'Itaú',valor:30.48,status:'pago'},
-            {data:'2026-11-16',tipo:'despesa',descricao:'Monitor Samsung',categoria:'Eletrônicos',conta:'Itaú',valor:30.48,status:'pendente'},
-            {data:'2026-12-16',tipo:'despesa',descricao:'Monitor Samsung',categoria:'Eletrônicos',conta:'Itaú',valor:30.48,status:'pendente'},
-            {data:'2027-01-16',tipo:'despesa',descricao:'Monitor Samsung',categoria:'Eletrônicos',conta:'Itaú',valor:30.48,status:'pendente'},
-            {data:'2027-02-16',tipo:'despesa',descricao:'Monitor Samsung',categoria:'Eletrônicos',conta:'Itaú',valor:30.48,status:'pendente'},
-            {data:'2027-03-16',tipo:'despesa',descricao:'Monitor Samsung',categoria:'Eletrônicos',conta:'Itaú',valor:30.48,status:'pendente'},
-            {data:'2027-04-16',tipo:'despesa',descricao:'Monitor Samsung',categoria:'Eletrônicos',conta:'Itaú',valor:30.48,status:'pendente'},
-            {data:'2027-05-16',tipo:'despesa',descricao:'Monitor Samsung',categoria:'Eletrônicos',conta:'Itaú',valor:30.48,status:'pendente'},
-            {data:'2027-06-16',tipo:'despesa',descricao:'Monitor Samsung',categoria:'Eletrônicos',conta:'Itaú',valor:30.48,status:'pendente'},
-            {data:'2027-07-16',tipo:'despesa',descricao:'Monitor Samsung',categoria:'Eletrônicos',conta:'Itaú',valor:30.48,status:'pendente'},
-            {data:'2027-08-16',tipo:'despesa',descricao:'Monitor Samsung',categoria:'Eletrônicos',conta:'Itaú',valor:30.48,status:'pendente'},
-            {data:'2027-09-16',tipo:'despesa',descricao:'Monitor Samsung',categoria:'Eletrônicos',conta:'Itaú',valor:30.48,status:'pendente'},
-            {data:'2027-10-16',tipo:'despesa',descricao:'Monitor Samsung',categoria:'Eletrônicos',conta:'Itaú',valor:30.48,status:'pendente'},
-            {data:'2027-11-16',tipo:'despesa',descricao:'Monitor Samsung',categoria:'Eletrônicos',conta:'Itaú',valor:30.48,status:'pendente'},
-            {data:'2027-12-16',tipo:'despesa',descricao:'Monitor Samsung',categoria:'Eletrônicos',conta:'Itaú',valor:30.48,status:'pendente'},
-            {data:'2028-01-16',tipo:'despesa',descricao:'Monitor Samsung',categoria:'Eletrônicos',conta:'Itaú',valor:30.48,status:'pendente'},
-            {data:'2028-02-16',tipo:'despesa',descricao:'Monitor Samsung',categoria:'Eletrônicos',conta:'Itaú',valor:30.48,status:'pendente'},
-            {data:'2028-03-16',tipo:'despesa',descricao:'Monitor Samsung',categoria:'Eletrônicos',conta:'Itaú',valor:30.48,status:'pendente'},
-            {data:'2028-04-16',tipo:'despesa',descricao:'Monitor Samsung',categoria:'Eletrônicos',conta:'Itaú',valor:30.48,status:'pendente'},
-            {data:'2028-05-16',tipo:'despesa',descricao:'Monitor Samsung',categoria:'Eletrônicos',conta:'Itaú',valor:30.53,status:'pendente'},
-            {data:'2026-09-15',tipo:'despesa',descricao:'Ração da Bolota',categoria:'Pets',conta:'Itaú',valor:49.9,status:'pago'},
-            {data:'2026-09-14',tipo:'despesa',descricao:'Etanol',categoria:'Carro',conta:'Itaú',valor:122.65,status:'pago'},
-            {data:'2026-09-13',tipo:'despesa',descricao:'Mini pastel e coca',categoria:'Alimentação',conta:'Itaú',valor:18.48,status:'pago'},
-            {data:'2026-09-12',tipo:'despesa',descricao:'Noite do Hamburguer Artesanal',categoria:'Alimentação',conta:'Itaú',valor:43.03,status:'pago'},
-            {data:'2026-09-11',tipo:'despesa',descricao:'Energia do apê',categoria:'Moradia',conta:'Itaú',valor:28.5,status:'pago'},
-            {data:'2026-10-11',tipo:'despesa',descricao:'Energia do apê',categoria:'Moradia',conta:'Itaú',valor:28.5,status:'pago'},
-            {data:'2026-11-11',tipo:'despesa',descricao:'Energia do apê',categoria:'Moradia',conta:'Itaú',valor:28.5,status:'pendente'},
-            {data:'2026-09-10',tipo:'despesa',descricao:'Pedaço de bolo',categoria:'Alimentação',conta:'Itaú',valor:6.98,status:'pago'},
-            {data:'2026-09-10',tipo:'despesa',descricao:'Requeijão',categoria:'Alimentação',conta:'Itaú',valor:9.99,status:'pago'},
-            {data:'2026-09-14',tipo:'despesa',descricao:'Memoria RAM 8GB',categoria:'Eletrônicos',conta:'Amazon',valor:33.17,status:'pago'},
-            {data:'2026-10-14',tipo:'despesa',descricao:'Memoria RAM 8GB',categoria:'Eletrônicos',conta:'Amazon',valor:33.17,status:'pago'},
-            {data:'2026-11-14',tipo:'despesa',descricao:'Memoria RAM 8GB',categoria:'Eletrônicos',conta:'Amazon',valor:33.17,status:'pendente'},
-            {data:'2026-12-14',tipo:'despesa',descricao:'Memoria RAM 8GB',categoria:'Eletrônicos',conta:'Amazon',valor:33.17,status:'pendente'},
-            {data:'2027-01-14',tipo:'despesa',descricao:'Memoria RAM 8GB',categoria:'Eletrônicos',conta:'Amazon',valor:33.17,status:'pendente'},
-            {data:'2027-02-14',tipo:'despesa',descricao:'Memoria RAM 8GB',categoria:'Eletrônicos',conta:'Amazon',valor:33.17,status:'pendente'},
-            {data:'2027-03-14',tipo:'despesa',descricao:'Memoria RAM 8GB',categoria:'Eletrônicos',conta:'Amazon',valor:33.17,status:'pendente'},
-            {data:'2027-04-14',tipo:'despesa',descricao:'Memoria RAM 8GB',categoria:'Eletrônicos',conta:'Amazon',valor:33.17,status:'pendente'},
-            {data:'2027-05-14',tipo:'despesa',descricao:'Memoria RAM 8GB',categoria:'Eletrônicos',conta:'Amazon',valor:33.17,status:'pendente'},
-            {data:'2027-06-14',tipo:'despesa',descricao:'Memoria RAM 8GB',categoria:'Eletrônicos',conta:'Amazon',valor:33.17,status:'pendente'},
-            {data:'2027-07-14',tipo:'despesa',descricao:'Memoria RAM 8GB',categoria:'Eletrônicos',conta:'Amazon',valor:33.17,status:'pendente'},
-            {data:'2027-08-14',tipo:'despesa',descricao:'Memoria RAM 8GB',categoria:'Eletrônicos',conta:'Amazon',valor:33.17,status:'pendente'},
-            {data:'2026-09-20',tipo:'despesa',descricao:'Brownie',categoria:'Alimentação',conta:'Itaú',valor:12.0,status:'pago'},
-            {data:'2026-09-20',tipo:'despesa',descricao:'Combo de lanche',categoria:'Alimentação',conta:'Itaú',valor:24.9,status:'pago'},
-            {data:'2026-09-20',tipo:'despesa',descricao:'Açaí',categoria:'Alimentação',conta:'Itaú',valor:21.9,status:'pago'},
-            {data:'2026-09-21',tipo:'receita',descricao:'Uber — lucro líquido',categoria:'Renda extra',conta:'Uber',valor:41.84,status:'pago'},
-            {data:'2026-08-18',tipo:'despesa',descricao:'Ração das dogs',categoria:'Pets',conta:'Nubank',valor:74.59,status:'pago'},
-            {data:'2026-09-18',tipo:'despesa',descricao:'Pix Crédito',categoria:'Financeiro',conta:'Nubank',valor:90.24,status:'pago'},
-            {data:'2026-09-21',tipo:'despesa',descricao:'Dinheiro emprestado',categoria:'Financeiro',conta:'Itaú',valor:100.0,status:'pago'},
-            {data:'2026-09-22',tipo:'despesa',descricao:'Carolinas de chocolate',categoria:'Alimentação',conta:'Itaú',valor:6.31,status:'pago'},
-            {data:'2026-09-22',tipo:'receita',descricao:'Uber — lucro líquido',categoria:'Renda extra',conta:'Uber',valor:41.02,status:'pago'},
-            {data:'2026-09-22',tipo:'despesa',descricao:'Etanol - 3,90L',categoria:'Carro',conta:'Itaú',valor:50.0,status:'pago'},
-            {data:'2026-09-22',tipo:'despesa',descricao:'Pão',categoria:'Alimentação',conta:'Itaú',valor:2.98,status:'pago'},
-            {data:'2026-09-22',tipo:'receita',descricao:'Reembolso do pão',categoria:'Salário',conta:'Itaú',valor:3.0,status:'pago'},
-            {data:'2026-09-23',tipo:'receita',descricao:'Uber — lucro líquido',categoria:'Renda extra',conta:'Uber',valor:45.17,status:'pago'},
-            {data:'2026-10-06',tipo:'despesa',descricao:'Docinho de morango',categoria:'Alimentação',conta:'Itaú',valor:5.0,status:'pago'},
-            {data:'2026-09-24',tipo:'despesa',descricao:'Kit de chave relojeiro',categoria:'Eletrônicos',conta:'Amazon',valor:10.26,status:'pago'},
-            {data:'2026-10-06',tipo:'despesa',descricao:'Bolinho de chocolate',categoria:'Alimentação',conta:'Itaú',valor:10.0,status:'pago'},
-            {data:'2026-09-24',tipo:'receita',descricao:'Uber — lucro líquido',categoria:'Renda extra',conta:'Uber',valor:68.04,status:'pago'},
-            {data:'2026-09-25',tipo:'despesa',descricao:'Marmita',categoria:'Alimentação',conta:'Itaú',valor:18.59,status:'pago'},
-            {data:'2026-10-06',tipo:'despesa',descricao:'Doce de ninho',categoria:'Alimentação',conta:'Itaú',valor:10.0,status:'pago'},
-            {data:'2026-09-26',tipo:'despesa',descricao:'Taxa de transferência instantânea',categoria:'Financeiro',conta:'Itaú',valor:4.5,status:'pago'},
-            {data:'2026-09-27',tipo:'despesa',descricao:'Carne para churrasco',categoria:'Lazer',conta:'Itaú',valor:24.32,status:'pago'},
-            {data:'2026-09-27',tipo:'despesa',descricao:'Bebida',categoria:'Lazer',conta:'Itaú',valor:6.95,status:'pago'},
-            {data:'2026-10-06',tipo:'despesa',descricao:'Brigadeiro Gourmet (Isa)',categoria:'Alimentação',conta:'Itaú',valor:9.0,status:'pago'},
-            {data:'2026-09-29',tipo:'receita',descricao:'Uber — lucro líquido',categoria:'Renda extra',conta:'Uber',valor:50.9,status:'pago'},
-            {data:'2026-10-06',tipo:'despesa',descricao:'Trufa',categoria:'Alimentação',conta:'Itaú',valor:18.0,status:'pago'},
-            {data:'2026-09-30',tipo:'receita',descricao:'Uber — lucro líquido',categoria:'Renda extra',conta:'Uber',valor:49.18,status:'pago'},
-            {data:'2026-10-01',tipo:'despesa',descricao:'Lanche KFC',categoria:'Alimentação',conta:'Itaú',valor:24.9,status:'pago'},
-            {data:'2026-10-01',tipo:'despesa',descricao:'Casquinha ovomaltine',categoria:'Alimentação',conta:'Itaú',valor:5.0,status:'pago'},
-            {data:'2026-10-02',tipo:'despesa',descricao:'Méqui colosso',categoria:'Alimentação',conta:'Itaú',valor:6.0,status:'pago'},
-            {data:'2026-10-06',tipo:'receita',descricao:'Uber — lucro líquido',categoria:'Renda extra',conta:'Uber',valor:37.79,status:'pago'},
-            {data:'2026-10-06',tipo:'despesa',descricao:'Aniversariante do mês (Grazi e Ana Cristina)',categoria:'Presentes',conta:'Itaú',valor:20.0,status:'pago'},
-            {data:'2026-10-05',tipo:'receita',descricao:'Salário mensal',categoria:'Salário',conta:'Itaú',valor:2510.0,status:'pago'},
-            {data:'2026-10-07',tipo:'receita',descricao:'Vale alimentação',categoria:'Benefícios',conta:'Itaú',valor:682.0,status:'pago'},
-            {data:'2026-10-07',tipo:'despesa',descricao:'Barra de chocolate',categoria:'Alimentação',conta:'Itaú',valor:9.9,status:'pago'},
-            {data:'2026-10-07',tipo:'receita',descricao:'Uber — lucro líquido',categoria:'Renda extra',conta:'Uber',valor:49.28,status:'pago'},
-            {data:'2026-10-07',tipo:'despesa',descricao:'Mel',categoria:'Família',conta:'Itaú',valor:50.0,status:'pago'},
-            {data:'2026-10-08',tipo:'despesa',descricao:'Spotify',categoria:'Serviços',conta:'Itaú',valor:10.0,status:'pago'},
-            {data:'2026-10-08',tipo:'receita',descricao:'Uber — lucro líquido',categoria:'Renda extra',conta:'Uber',valor:51.03,status:'pago'},
-            {data:'2026-10-09',tipo:'receita',descricao:'Uber — lucro líquido',categoria:'Renda extra',conta:'Uber',valor:44.21,status:'pago'},
-            {data:'2026-10-10',tipo:'despesa',descricao:'Vivo Ultra (fixa e móvel)',categoria:'Moradia',conta:'Itaú',valor:160.0,status:'pago'},
-            {data:'2026-10-10',tipo:'despesa',descricao:'Condominio',categoria:'Moradia',conta:'Itaú',valor:298.12,status:'pago'},
-            {data:'2026-10-14',tipo:'despesa',descricao:'Icloud',categoria:'Serviços',conta:'Itaú',valor:5.9,status:'pago'},
-            {data:'2026-10-19',tipo:'receita',descricao:'Uber — lucro líquido',categoria:'Renda extra',conta:'Uber',valor:26.86,status:'pago'},
-            {data:'2026-10-20',tipo:'receita',descricao:'Uber — lucro líquido',categoria:'Renda extra',conta:'Uber',valor:44.34,status:'pago'}
+        const defaultTransactions = [
+            {id:'tx-1',data:'2025-09-06',tipo:'despesa',descricao:'Fogão Dako',categoria:'Eletrônicos',subcategoria:'Eletrodomésticos 🧊',conta:'Itaú',forma:'Itaú - Crédito',valor:76.76,status:'pago'},
+            {id:'tx-2',data:'2025-10-06',tipo:'despesa',descricao:'Fogão Dako',categoria:'Eletrônicos',subcategoria:'Eletrodomésticos 🧊',conta:'Itaú',forma:'Itaú - Crédito',valor:76.76,status:'pago'},
+            {id:'tx-3',data:'2025-11-06',tipo:'despesa',descricao:'Fogão Dako',categoria:'Eletrônicos',subcategoria:'Eletrodomésticos 🧊',conta:'Itaú',forma:'Itaú - Crédito',valor:76.76,status:'pago'},
+            {id:'tx-4',data:'2025-12-06',tipo:'despesa',descricao:'Fogão Dako',categoria:'Eletrônicos',subcategoria:'Eletrodomésticos 🧊',conta:'Itaú',forma:'Itaú - Crédito',valor:76.76,status:'pago'},
+            {id:'tx-5',data:'2026-01-06',tipo:'despesa',descricao:'Fogão Dako',categoria:'Eletrônicos',subcategoria:'Eletrodomésticos 🧊',conta:'Itaú',forma:'Itaú - Crédito',valor:76.76,status:'pago'},
+            {id:'tx-6',data:'2026-08-25',tipo:'despesa',descricao:'Folha de EVA',categoria:'Outros',subcategoria:'Outros 📦',conta:'Itaú',forma:'Itaú - Crédito',valor:1.99,status:'pago'},
+            {id:'tx-7',data:'2026-08-26',tipo:'despesa',descricao:'Carolinas (200g)',categoria:'Alimentação',subcategoria:'Doces 🍫',conta:'Itaú',forma:'Itaú - Crédito',valor:16.16,status:'pago'},
+            {id:'tx-8',data:'2026-08-28',tipo:'despesa',descricao:'Bebidas',categoria:'Alimentação',subcategoria:'Restaurantes / Lanches 🍔',conta:'Itaú',forma:'Itaú - Crédito',valor:15.8,status:'pago'},
+            {id:'tx-9',data:'2026-08-28',tipo:'receita',descricao:'PIS',categoria:'Benefícios',subcategoria:'PIS / Abono 🏦',conta:'Transferência bancária',forma:'Transferência bancária',valor:1480.0,status:'pago'},
+            {id:'tx-10',data:'2026-08-28',tipo:'despesa',descricao:'Etanol 3,29 l',categoria:'Carro',subcategoria:'Combustível ⛽',conta:'C6 Bank',forma:'C6 Bank - Crédito',valor:50.0,status:'pago'},
+            {id:'tx-11',data:'2026-08-28',tipo:'despesa',descricao:'Barra de chocolate',categoria:'Alimentação',subcategoria:'Doces 🍫',conta:'Itaú',forma:'Itaú - Crédito',valor:11.99,status:'pago'},
+            {id:'tx-12',data:'2026-08-28',tipo:'receita',descricao:'Rendimento Uber',categoria:'Renda extra',subcategoria:'Uber — lucro líquido 🚕',conta:'Pix',forma:'Pix',valor:380.0,status:'pago'},
+            {id:'tx-13',data:'2026-08-28',tipo:'despesa',descricao:'Fogão 4 bocas',categoria:'Eletrônicos',subcategoria:'Eletrodomésticos 🧊',conta:'Itaú',forma:'Itaú - Crédito',valor:76.76,status:'pago'},
+            {id:'tx-14',data:'2026-08-28',tipo:'despesa',descricao:'Tenis Adidas (2 uni)',categoria:'Pessoais',subcategoria:'Calçados 👟',conta:'Itaú',forma:'Itaú - Crédito',valor:52.63,status:'pago'},
+            {id:'tx-15',data:'2026-08-28',tipo:'despesa',descricao:'Calça',categoria:'Pessoais',subcategoria:'Vestuário 👕',conta:'Itaú',forma:'Itaú - Crédito',valor:53.33,status:'pago'},
+            {id:'tx-16',data:'2026-08-28',tipo:'despesa',descricao:'Manopla do Cambio',categoria:'Carro',subcategoria:'Manutenção corretiva 🔧',conta:'Itaú',forma:'Itaú - Crédito',valor:23.15,status:'pago'},
+            {id:'tx-17',data:'2026-08-28',tipo:'despesa',descricao:'Spotify',categoria:'Serviços',subcategoria:'Assinaturas 🔗',conta:'Itaú - Pix',forma:'Itaú - Pix',valor:10.0,status:'pago'},
+            {id:'tx-18',data:'2026-08-28',tipo:'despesa',descricao:'Freio, bico e troca de manopla',categoria:'Carro',subcategoria:'Manutenção corretiva 🔧',conta:'C6 Bank',forma:'C6 Bank - Crédito',valor:250.39,status:'pago'},
+            {id:'tx-19',data:'2026-08-28',tipo:'despesa',descricao:'Parcelamento de fatura',categoria:'Financeiro',subcategoria:'Parcelamentos 🧾',conta:'C6 Bank',forma:'C6 Bank - Crédito',valor:236.56,status:'pago'},
+            {id:'tx-20',data:'2026-08-28',tipo:'despesa',descricao:'IPVA e licenciamento',categoria:'Carro',subcategoria:'IPVA / Licenciamento 📄',conta:'C6 Bank',forma:'C6 Bank - Crédito',valor:151.28,status:'pago'},
+            {id:'tx-21',data:'2026-08-28',tipo:'despesa',descricao:'Taxa parcelamento Zul',categoria:'Financeiro',subcategoria:'Tarifas bancárias 💸',conta:'C6 Bank',forma:'C6 Bank - Crédito',valor:38.36,status:'pago'},
+            {id:'tx-22',data:'2026-08-28',tipo:'despesa',descricao:'Fone de ouvido',categoria:'Eletrônicos',subcategoria:'Acessórios 🎧',conta:'C6 Bank',forma:'C6 Bank - Crédito',valor:34.7,status:'pago'},
+            {id:'tx-23',data:'2026-08-28',tipo:'despesa',descricao:'Kit de perfume',categoria:'Família',subcategoria:'Presentes 🎁',conta:'C6 Bank',forma:'C6 Bank - Crédito',valor:47.47,status:'pago'},
+            {id:'tx-24',data:'2026-09-28',tipo:'despesa',descricao:'Ração das dogs',categoria:'Pets',subcategoria:'Ração 🐶',conta:'Nubank',forma:'Nubank - Crédito',valor:74.59,status:'pago'},
+            {id:'tx-25',data:'2026-08-28',tipo:'receita',descricao:'Vale alimentação',categoria:'Benefícios',subcategoria:'Vale alimentação 🛒',conta:'Transferência bancária',forma:'Transferência bancária',valor:682.0,status:'pago'},
+            {id:'tx-26',data:'2026-08-28',tipo:'despesa',descricao:'Sorvete no cascão',categoria:'Alimentação',subcategoria:'Doces 🍫',conta:'Itaú',forma:'Itaú - Crédito',valor:7.0,status:'pago'},
+            {id:'tx-27',data:'2026-08-29',tipo:'despesa',descricao:'Mini pizza',categoria:'Alimentação',subcategoria:'Restaurantes / Lanches 🍔',conta:'Itaú',forma:'Itaú - Crédito',valor:36.0,status:'pago'},
+            {id:'tx-28',data:'2026-08-29',tipo:'despesa',descricao:'Sorvete',categoria:'Alimentação',subcategoria:'Doces 🍫',conta:'Itaú',forma:'Itaú - Crédito',valor:7.0,status:'pago'},
+            {id:'tx-29',data:'2026-08-29',tipo:'despesa',descricao:'Massa com frango crocante',categoria:'Alimentação',subcategoria:'Restaurantes / Lanches 🍔',conta:'Itaú',forma:'Itaú - Crédito',valor:48.98,status:'pago'},
+            {id:'tx-30',data:'2026-08-30',tipo:'despesa',descricao:'Pedaço de bolo - ninho com avelã',categoria:'Alimentação',subcategoria:'Doces 🍫',conta:'Itaú',forma:'Itaú - Crédito',valor:22.0,status:'pago'},
+            {id:'tx-31',data:'2026-08-30',tipo:'despesa',descricao:'Tobogã',categoria:'Lazer',subcategoria:'Passeios 🌳',conta:'Itaú - Pix',forma:'Itaú - Pix',valor:40.0,status:'pago'},
+            {id:'tx-32',data:'2026-08-30',tipo:'receita',descricao:'Reembolso - tobogã',categoria:'Reembolso',subcategoria:'Reembolso geral 🔄',conta:'Pix',forma:'Pix',valor:10.0,status:'pago'},
+            {id:'tx-33',data:'2026-08-31',tipo:'receita',descricao:'Pag. Minoxidil (Ivan)',categoria:'Reembolso',subcategoria:'Reembolso geral 🔄',conta:'Pix',forma:'Pix',valor:44.0,status:'pago'},
+            {id:'tx-34',data:'2026-08-31',tipo:'receita',descricao:'Tobogã (mãe e gata)',categoria:'Reembolso',subcategoria:'Reembolso geral 🔄',conta:'Pix',forma:'Pix',valor:20.0,status:'pago'},
+            {id:'tx-35',data:'2026-09-01',tipo:'despesa',descricao:'Snickers',categoria:'Alimentação',subcategoria:'Doces 🍫',conta:'Itaú',forma:'Itaú - Crédito',valor:4.59,status:'pago'},
+            {id:'tx-36',data:'2026-09-01',tipo:'despesa',descricao:'Pão',categoria:'Alimentação',subcategoria:'Padaria 🥖',conta:'Itaú',forma:'Itaú - Crédito',valor:3.01,status:'pago'},
+            {id:'tx-37',data:'2026-09-02',tipo:'despesa',descricao:'Almoço',categoria:'Alimentação',subcategoria:'Restaurantes / Lanches 🍔',conta:'Itaú',forma:'Itaú - Crédito',valor:48.98,status:'pago'},
+            {id:'tx-38',data:'2026-09-02',tipo:'despesa',descricao:'Etanol - 3,29',categoria:'Carro',subcategoria:'Combustível ⛽',conta:'Itaú',forma:'Itaú - Crédito',valor:124.63,status:'pago'},
+            {id:'tx-39',data:'2026-09-03',tipo:'receita',descricao:'Uber - corrida do dia',categoria:'Renda extra',subcategoria:'Uber — lucro líquido 🚕',conta:'Pix',forma:'Pix',valor:51.25,status:'pago'},
+            {id:'tx-40',data:'2026-09-04',tipo:'despesa',descricao:'Sorvete',categoria:'Alimentação',subcategoria:'Doces 🍫',conta:'Itaú',forma:'Itaú - Crédito',valor:10.99,status:'pago'},
+            {id:'tx-41',data:'2026-09-04',tipo:'despesa',descricao:'Combo de lanche',categoria:'Alimentação',subcategoria:'Restaurantes / Lanches 🍔',conta:'Itaú - Pix',forma:'Itaú - Pix',valor:27.45,status:'pago'},
+            {id:'tx-42',data:'2026-09-04',tipo:'despesa',descricao:'Parmegiana de frango',categoria:'Alimentação',subcategoria:'Restaurantes / Lanches 🍔',conta:'Itaú',forma:'Itaú - Crédito',valor:32.0,status:'pago'},
+            {id:'tx-43',data:'2026-09-05',tipo:'despesa',descricao:'Combo de lanche',categoria:'Alimentação',subcategoria:'Restaurantes / Lanches 🍔',conta:'Itaú',forma:'Itaú - Crédito',valor:50.9,status:'pago'},
+            {id:'tx-44',data:'2026-09-06',tipo:'despesa',descricao:'Lanche',categoria:'Alimentação',subcategoria:'Restaurantes / Lanches 🍔',conta:'Itaú',forma:'Itaú - Crédito',valor:33.0,status:'pago'},
+            {id:'tx-45',data:'2026-09-07',tipo:'despesa',descricao:'Consumo de gás',categoria:'Moradia',subcategoria:'Gás 🔥',conta:'Itaú - Pix',forma:'Itaú - Pix',valor:60.16,status:'pago'},
+            {id:'tx-46',data:'2026-09-08',tipo:'receita',descricao:'Uber - corrida do dia',categoria:'Renda extra',subcategoria:'Uber — lucro líquido 🚕',conta:'Pix',forma:'Pix',valor:39.75,status:'pago'},
+            {id:'tx-47',data:'2026-09-10',tipo:'despesa',descricao:'Dispesa mensal',categoria:'Alimentação',subcategoria:'Supermercado 🛒',conta:'Itaú',forma:'Itaú - Crédito',valor:430.0,status:'pago'},
+            {id:'tx-48',data:'2026-09-11',tipo:'receita',descricao:'Uber - corrida do dia',categoria:'Renda extra',subcategoria:'Uber — lucro líquido 🚕',conta:'Pix',forma:'Pix',valor:51.35,status:'pago'},
+            {id:'tx-49',data:'2026-09-28',tipo:'despesa',descricao:'Fogão 4 bocas',categoria:'Eletrônicos',subcategoria:'Eletrodomésticos 🧊',conta:'Itaú',forma:'Itaú - Crédito',valor:76.76,status:'pago'},
+            {id:'tx-50',data:'2026-09-28',tipo:'despesa',descricao:'Calça',categoria:'Pessoais',subcategoria:'Vestuário 👕',conta:'Itaú',forma:'Itaú - Crédito',valor:53.33,status:'pago'},
+            {id:'tx-51',data:'2026-09-28',tipo:'despesa',descricao:'Manopla do Cambio',categoria:'Carro',subcategoria:'Manutenção corretiva 🔧',conta:'Itaú',forma:'Itaú - Crédito',valor:23.15,status:'pago'},
+            {id:'tx-52',data:'2026-09-28',tipo:'despesa',descricao:'Freio, bico e troca de manopla',categoria:'Carro',subcategoria:'Manutenção corretiva 🔧',conta:'C6 Bank',forma:'C6 Bank - Crédito',valor:250.39,status:'pago'},
+            {id:'tx-53',data:'2026-09-28',tipo:'despesa',descricao:'Parcelamento de fatura',categoria:'Financeiro',subcategoria:'Parcelamentos 🧾',conta:'C6 Bank',forma:'C6 Bank - Crédito',valor:236.56,status:'pago'},
+            {id:'tx-54',data:'2026-09-28',tipo:'despesa',descricao:'IPVA e licenciamento',categoria:'Carro',subcategoria:'IPVA / Licenciamento 📄',conta:'C6 Bank',forma:'C6 Bank - Crédito',valor:151.28,status:'pago'},
+            {id:'tx-55',data:'2026-09-28',tipo:'despesa',descricao:'Taxa parcelamento Zul',categoria:'Financeiro',subcategoria:'Tarifas bancárias 💸',conta:'C6 Bank',forma:'C6 Bank - Crédito',valor:38.36,status:'pago'},
+            {id:'tx-56',data:'2026-09-28',tipo:'despesa',descricao:'Fone de ouvido',categoria:'Eletrônicos',subcategoria:'Acessórios 🎧',conta:'C6 Bank',forma:'C6 Bank - Crédito',valor:34.7,status:'pago'},
+            {id:'tx-57',data:'2026-09-28',tipo:'despesa',descricao:'Kit de perfume',categoria:'Família',subcategoria:'Presentes 🎁',conta:'C6 Bank',forma:'C6 Bank - Crédito',valor:47.47,status:'pago'},
+            {id:'tx-58',data:'2026-10-28',tipo:'despesa',descricao:'Fogão 4 bocas',categoria:'Eletrônicos',subcategoria:'Eletrodomésticos 🧊',conta:'Itaú',forma:'Itaú - Crédito',valor:76.76,status:'pendente'},
+            {id:'tx-59',data:'2026-10-28',tipo:'despesa',descricao:'Freio, bico e troca de manopla',categoria:'Carro',subcategoria:'Manutenção corretiva 🔧',conta:'C6 Bank',forma:'C6 Bank - Crédito',valor:250.39,status:'pendente'},
+            {id:'tx-60',data:'2026-10-28',tipo:'despesa',descricao:'Parcelamento de fatura',categoria:'Financeiro',subcategoria:'Parcelamentos 🧾',conta:'C6 Bank',forma:'C6 Bank - Crédito',valor:236.56,status:'pendente'},
+            {id:'tx-61',data:'2026-10-28',tipo:'despesa',descricao:'IPVA e licenciamento',categoria:'Carro',subcategoria:'IPVA / Licenciamento 📄',conta:'C6 Bank',forma:'C6 Bank - Crédito',valor:151.28,status:'pendente'},
+            {id:'tx-62',data:'2026-10-28',tipo:'despesa',descricao:'Taxa parcelamento Zul',categoria:'Financeiro',subcategoria:'Tarifas bancárias 💸',conta:'C6 Bank',forma:'C6 Bank - Crédito',valor:38.36,status:'pendente'},
+            {id:'tx-63',data:'2026-11-28',tipo:'despesa',descricao:'Fogão 4 bocas',categoria:'Eletrônicos',subcategoria:'Eletrodomésticos 🧊',conta:'Itaú',forma:'Itaú - Crédito',valor:76.76,status:'pendente'},
+            {id:'tx-64',data:'2026-11-28',tipo:'despesa',descricao:'Freio, bico e troca de manopla',categoria:'Carro',subcategoria:'Manutenção corretiva 🔧',conta:'C6 Bank',forma:'C6 Bank - Crédito',valor:250.39,status:'pendente'},
+            {id:'tx-65',data:'2026-12-28',tipo:'despesa',descricao:'Fogão 4 bocas',categoria:'Eletrônicos',subcategoria:'Eletrodomésticos 🧊',conta:'Itaú',forma:'Itaú - Crédito',valor:76.76,status:'pendente'},
+            {id:'tx-66',data:'2027-01-28',tipo:'despesa',descricao:'Fogão 4 bocas',categoria:'Eletrônicos',subcategoria:'Eletrodomésticos 🧊',conta:'Itaú',forma:'Itaú - Crédito',valor:76.76,status:'pendente'},
+            {id:'tx-67',data:'2026-09-14',tipo:'despesa',descricao:'Seguro Auto',categoria:'Carro',subcategoria:'Seguro auto 🛡️',conta:'Itaú',forma:'Itaú - Crédito',valor:147.47,status:'pago'},
+            {id:'tx-68',data:'2026-10-14',tipo:'despesa',descricao:'Seguro Auto',categoria:'Carro',subcategoria:'Seguro auto 🛡️',conta:'Itaú',forma:'Itaú - Crédito',valor:147.47,status:'pago'},
+            {id:'tx-69',data:'2026-11-14',tipo:'despesa',descricao:'Seguro Auto',categoria:'Carro',subcategoria:'Seguro auto 🛡️',conta:'Itaú',forma:'Itaú - Crédito',valor:147.47,status:'pendente'},
+            {id:'tx-70',data:'2026-12-14',tipo:'despesa',descricao:'Seguro Auto',categoria:'Carro',subcategoria:'Seguro auto 🛡️',conta:'Itaú',forma:'Itaú - Crédito',valor:147.47,status:'pendente'},
+            {id:'tx-71',data:'2027-01-14',tipo:'despesa',descricao:'Seguro Auto',categoria:'Carro',subcategoria:'Seguro auto 🛡️',conta:'Itaú',forma:'Itaú - Crédito',valor:147.47,status:'pendente'},
+            {id:'tx-72',data:'2027-02-14',tipo:'despesa',descricao:'Seguro Auto',categoria:'Carro',subcategoria:'Seguro auto 🛡️',conta:'Itaú',forma:'Itaú - Crédito',valor:147.47,status:'pendente'},
+            {id:'tx-73',data:'2027-03-14',tipo:'despesa',descricao:'Seguro Auto',categoria:'Carro',subcategoria:'Seguro auto 🛡️',conta:'Itaú',forma:'Itaú - Crédito',valor:147.47,status:'pendente'},
+            {id:'tx-74',data:'2027-04-14',tipo:'despesa',descricao:'Seguro Auto',categoria:'Carro',subcategoria:'Seguro auto 🛡️',conta:'Itaú',forma:'Itaú - Crédito',valor:147.47,status:'pendente'},
+            {id:'tx-75',data:'2027-05-14',tipo:'despesa',descricao:'Seguro Auto',categoria:'Carro',subcategoria:'Seguro auto 🛡️',conta:'Itaú',forma:'Itaú - Crédito',valor:147.47,status:'pendente'},
+            {id:'tx-76',data:'2027-06-14',tipo:'despesa',descricao:'Seguro Auto',categoria:'Carro',subcategoria:'Seguro auto 🛡️',conta:'Itaú',forma:'Itaú - Crédito',valor:147.47,status:'pendente'},
+            {id:'tx-77',data:'2026-09-15',tipo:'despesa',descricao:'Cokies',categoria:'Alimentação',subcategoria:'Doces 🍫',conta:'Itaú',forma:'Itaú - Crédito',valor:13.9,status:'pago'},
+            {id:'tx-78',data:'2026-09-15',tipo:'receita',descricao:'Uber — lucro líquido',categoria:'Renda extra',subcategoria:'Uber — lucro líquido 🚕',conta:'Uber',forma:'Pix',valor:34.71,status:'pago'},
+            {id:'tx-79',data:'2026-10-07',tipo:'despesa',descricao:'Cone de kinder',categoria:'Alimentação',subcategoria:'Doces 🍫',conta:'Itaú',forma:'Itaú - Pix',valor:6.0,status:'pago'},
+            {id:'tx-80',data:'2026-09-17',tipo:'despesa',descricao:'Carolinas de chocolate',categoria:'Alimentação',subcategoria:'Doces 🍫',conta:'Itaú',forma:'Itaú - Crédito',valor:6.63,status:'pago'},
+            {id:'tx-81',data:'2026-09-18',tipo:'receita',descricao:'Uber — lucro líquido',categoria:'Renda extra',subcategoria:'Uber — lucro líquido 🚕',conta:'Uber',forma:'Pix',valor:46.98,status:'pago'},
+            {id:'tx-82',data:'2026-09-19',tipo:'despesa',descricao:'Temaki',categoria:'Alimentação',subcategoria:'Restaurantes / Lanches 🍔',conta:'Itaú',forma:'Itaú - Crédito',valor:37.9,status:'pago'},
+            {id:'tx-83',data:'2026-09-17',tipo:'despesa',descricao:'Pão',categoria:'Alimentação',subcategoria:'Padaria 🥖',conta:'Itaú',forma:'Itaú - Crédito',valor:3.12,status:'pago'},
+            {id:'tx-84',data:'2026-09-16',tipo:'despesa',descricao:'Monitor Samsung',categoria:'Eletrônicos',subcategoria:'Informática 💻',conta:'Itaú',forma:'Itaú - Crédito',valor:30.48,status:'pago'},
+            {id:'tx-85',data:'2026-10-16',tipo:'despesa',descricao:'Monitor Samsung',categoria:'Eletrônicos',subcategoria:'Informática 💻',conta:'Itaú',forma:'Itaú - Crédito',valor:30.48,status:'pago'},
+            {id:'tx-86',data:'2026-11-16',tipo:'despesa',descricao:'Monitor Samsung',categoria:'Eletrônicos',subcategoria:'Informática 💻',conta:'Itaú',forma:'Itaú - Crédito',valor:30.48,status:'pendente'},
+            {id:'tx-87',data:'2026-12-16',tipo:'despesa',descricao:'Monitor Samsung',categoria:'Eletrônicos',subcategoria:'Informática 💻',conta:'Itaú',forma:'Itaú - Crédito',valor:30.48,status:'pendente'},
+            {id:'tx-88',data:'2027-01-16',tipo:'despesa',descricao:'Monitor Samsung',categoria:'Eletrônicos',subcategoria:'Informática 💻',conta:'Itaú',forma:'Itaú - Crédito',valor:30.48,status:'pendente'},
+            {id:'tx-89',data:'2027-02-16',tipo:'despesa',descricao:'Monitor Samsung',categoria:'Eletrônicos',subcategoria:'Informática 💻',conta:'Itaú',forma:'Itaú - Crédito',valor:30.48,status:'pendente'},
+            {id:'tx-90',data:'2027-03-16',tipo:'despesa',descricao:'Monitor Samsung',categoria:'Eletrônicos',subcategoria:'Informática 💻',conta:'Itaú',forma:'Itaú - Crédito',valor:30.48,status:'pendente'},
+            {id:'tx-91',data:'2027-04-16',tipo:'despesa',descricao:'Monitor Samsung',categoria:'Eletrônicos',subcategoria:'Informática 💻',conta:'Itaú',forma:'Itaú - Crédito',valor:30.48,status:'pendente'},
+            {id:'tx-92',data:'2027-05-16',tipo:'despesa',descricao:'Monitor Samsung',categoria:'Eletrônicos',subcategoria:'Informática 💻',conta:'Itaú',forma:'Itaú - Crédito',valor:30.48,status:'pendente'},
+            {id:'tx-93',data:'2027-06-16',tipo:'despesa',descricao:'Monitor Samsung',categoria:'Eletrônicos',subcategoria:'Informática 💻',conta:'Itaú',forma:'Itaú - Crédito',valor:30.48,status:'pendente'},
+            {id:'tx-94',data:'2027-07-16',tipo:'despesa',descricao:'Monitor Samsung',categoria:'Eletrônicos',subcategoria:'Informática 💻',conta:'Itaú',forma:'Itaú - Crédito',valor:30.48,status:'pendente'},
+            {id:'tx-95',data:'2027-08-16',tipo:'despesa',descricao:'Monitor Samsung',categoria:'Eletrônicos',subcategoria:'Informática 💻',conta:'Itaú',forma:'Itaú - Crédito',valor:30.48,status:'pendente'},
+            {id:'tx-96',data:'2027-09-16',tipo:'despesa',descricao:'Monitor Samsung',categoria:'Eletrônicos',subcategoria:'Informática 💻',conta:'Itaú',forma:'Itaú - Crédito',valor:30.48,status:'pendente'},
+            {id:'tx-97',data:'2027-10-16',tipo:'despesa',descricao:'Monitor Samsung',categoria:'Eletrônicos',subcategoria:'Informática 💻',conta:'Itaú',forma:'Itaú - Crédito',valor:30.48,status:'pendente'},
+            {id:'tx-98',data:'2027-11-16',tipo:'despesa',descricao:'Monitor Samsung',categoria:'Eletrônicos',subcategoria:'Informática 💻',conta:'Itaú',forma:'Itaú - Crédito',valor:30.48,status:'pendente'},
+            {id:'tx-99',data:'2027-12-16',tipo:'despesa',descricao:'Monitor Samsung',categoria:'Eletrônicos',subcategoria:'Informática 💻',conta:'Itaú',forma:'Itaú - Crédito',valor:30.48,status:'pendente'},
+            {id:'tx-100',data:'2028-01-16',tipo:'despesa',descricao:'Monitor Samsung',categoria:'Eletrônicos',subcategoria:'Informática 💻',conta:'Itaú',forma:'Itaú - Crédito',valor:30.48,status:'pendente'},
+            {id:'tx-101',data:'2028-02-16',tipo:'despesa',descricao:'Monitor Samsung',categoria:'Eletrônicos',subcategoria:'Informática 💻',conta:'Itaú',forma:'Itaú - Crédito',valor:30.48,status:'pendente'},
+            {id:'tx-102',data:'2028-03-16',tipo:'despesa',descricao:'Monitor Samsung',categoria:'Eletrônicos',subcategoria:'Informática 💻',conta:'Itaú',forma:'Itaú - Crédito',valor:30.48,status:'pendente'},
+            {id:'tx-103',data:'2028-04-16',tipo:'despesa',descricao:'Monitor Samsung',categoria:'Eletrônicos',subcategoria:'Informática 💻',conta:'Itaú',forma:'Itaú - Crédito',valor:30.48,status:'pendente'},
+            {id:'tx-104',data:'2028-05-16',tipo:'despesa',descricao:'Monitor Samsung',categoria:'Eletrônicos',subcategoria:'Informática 💻',conta:'Itaú',forma:'Itaú - Crédito',valor:30.53,status:'pendente'},
+            {id:'tx-105',data:'2026-09-15',tipo:'despesa',descricao:'Ração da Bolota',categoria:'Pets',subcategoria:'Ração 🐶',conta:'Itaú',forma:'Nubank - Crédito',valor:49.9,status:'pago'},
+            {id:'tx-106',data:'2026-09-14',tipo:'despesa',descricao:'Etanol',categoria:'Carro',subcategoria:'Combustível ⛽',conta:'Itaú',forma:'Itaú - Crédito',valor:122.65,status:'pago'},
+            {id:'tx-107',data:'2026-09-13',tipo:'despesa',descricao:'Mini pastel e coca',categoria:'Alimentação',subcategoria:'Restaurantes / Lanches 🍔',conta:'Itaú',forma:'Itaú - Crédito',valor:18.48,status:'pago'},
+            {id:'tx-108',data:'2026-09-12',tipo:'despesa',descricao:'Noite do Hamburguer Artesanal',categoria:'Alimentação',subcategoria:'Restaurantes / Lanches 🍔',conta:'Itaú',forma:'Itaú - Crédito',valor:43.03,status:'pago'},
+            {id:'tx-109',data:'2026-09-11',tipo:'despesa',descricao:'Energia do apê',categoria:'Moradia',subcategoria:'Energia elétrica 💡',conta:'Itaú',forma:'Itaú - Crédito',valor:28.5,status:'pago'},
+            {id:'tx-110',data:'2026-10-11',tipo:'despesa',descricao:'Energia do apê',categoria:'Moradia',subcategoria:'Energia elétrica 💡',conta:'Itaú',forma:'Itaú - Crédito',valor:28.5,status:'pago'},
+            {id:'tx-111',data:'2026-11-11',tipo:'despesa',descricao:'Energia do apê',categoria:'Moradia',subcategoria:'Energia elétrica 💡',conta:'Itaú',forma:'Itaú - Crédito',valor:28.5,status:'pendente'},
+            {id:'tx-112',data:'2026-09-10',tipo:'despesa',descricao:'Pedaço de bolo',categoria:'Alimentação',subcategoria:'Doces 🍫',conta:'Itaú',forma:'Itaú - Crédito',valor:6.98,status:'pago'},
+            {id:'tx-113',data:'2026-09-10',tipo:'despesa',descricao:'Requeijão',categoria:'Alimentação',subcategoria:'Supermercado 🛒',conta:'Itaú',forma:'Itaú - Crédito',valor:9.99,status:'pago'},
+            {id:'tx-114',data:'2026-09-14',tipo:'despesa',descricao:'Memoria RAM 8GB',categoria:'Eletrônicos',subcategoria:'Informática 💻',conta:'Amazon',forma:'Amazon - Crédito',valor:33.17,status:'pago'},
+            {id:'tx-115',data:'2026-10-14',tipo:'despesa',descricao:'Memoria RAM 8GB',categoria:'Eletrônicos',subcategoria:'Informática 💻',conta:'Amazon',forma:'Amazon - Crédito',valor:33.17,status:'pago'},
+            {id:'tx-116',data:'2026-11-14',tipo:'despesa',descricao:'Memoria RAM 8GB',categoria:'Eletrônicos',subcategoria:'Informática 💻',conta:'Amazon',forma:'Amazon - Crédito',valor:33.17,status:'pendente'},
+            {id:'tx-117',data:'2026-12-14',tipo:'despesa',descricao:'Memoria RAM 8GB',categoria:'Eletrônicos',subcategoria:'Informática 💻',conta:'Amazon',forma:'Amazon - Crédito',valor:33.17,status:'pendente'},
+            {id:'tx-118',data:'2027-01-14',tipo:'despesa',descricao:'Memoria RAM 8GB',categoria:'Eletrônicos',subcategoria:'Informática 💻',conta:'Amazon',forma:'Amazon - Crédito',valor:33.17,status:'pendente'},
+            {id:'tx-119',data:'2027-02-14',tipo:'despesa',descricao:'Memoria RAM 8GB',categoria:'Eletrônicos',subcategoria:'Informática 💻',conta:'Amazon',forma:'Amazon - Crédito',valor:33.17,status:'pendente'},
+            {id:'tx-120',data:'2027-03-14',tipo:'despesa',descricao:'Memoria RAM 8GB',categoria:'Eletrônicos',subcategoria:'Informática 💻',conta:'Amazon',forma:'Amazon - Crédito',valor:33.17,status:'pendente'},
+            {id:'tx-121',data:'2027-04-14',tipo:'despesa',descricao:'Memoria RAM 8GB',categoria:'Eletrônicos',subcategoria:'Informática 💻',conta:'Amazon',forma:'Amazon - Crédito',valor:33.17,status:'pendente'},
+            {id:'tx-122',data:'2027-05-14',tipo:'despesa',descricao:'Memoria RAM 8GB',categoria:'Eletrônicos',subcategoria:'Informática 💻',conta:'Amazon',forma:'Amazon - Crédito',valor:33.17,status:'pendente'},
+            {id:'tx-123',data:'2027-06-14',tipo:'despesa',descricao:'Memoria RAM 8GB',categoria:'Eletrônicos',subcategoria:'Informática 💻',conta:'Amazon',forma:'Amazon - Crédito',valor:33.17,status:'pendente'},
+            {id:'tx-124',data:'2027-07-14',tipo:'despesa',descricao:'Memoria RAM 8GB',categoria:'Eletrônicos',subcategoria:'Informática 💻',conta:'Amazon',forma:'Amazon - Crédito',valor:33.17,status:'pendente'},
+            {id:'tx-125',data:'2027-08-14',tipo:'despesa',descricao:'Memoria RAM 8GB',categoria:'Eletrônicos',subcategoria:'Informática 💻',conta:'Amazon',forma:'Amazon - Crédito',valor:33.17,status:'pendente'},
+            {id:'tx-126',data:'2026-09-20',tipo:'despesa',descricao:'Brownie',categoria:'Alimentação',subcategoria:'Doces 🍫',conta:'Itaú',forma:'Itaú - Crédito',valor:12.0,status:'pago'},
+            {id:'tx-127',data:'2026-09-20',tipo:'despesa',descricao:'Combo de lanche',categoria:'Alimentação',subcategoria:'Restaurantes / Lanches 🍔',conta:'Itaú',forma:'Itaú - Crédito',valor:24.9,status:'pago'},
+            {id:'tx-128',data:'2026-09-20',tipo:'despesa',descricao:'Açaí',categoria:'Alimentação',subcategoria:'Doces 🍫',conta:'Itaú',forma:'Itaú - Crédito',valor:21.9,status:'pago'},
+            {id:'tx-129',data:'2026-09-21',tipo:'receita',descricao:'Uber — lucro líquido',categoria:'Renda extra',subcategoria:'Uber — lucro líquido 🚕',conta:'Uber',forma:'Pix',valor:41.84,status:'pago'},
+            {id:'tx-130',data:'2026-08-18',tipo:'despesa',descricao:'Ração das dogs',categoria:'Pets',subcategoria:'Ração 🐶',conta:'Nubank',forma:'Nubank - Crédito',valor:74.59,status:'pago'},
+            {id:'tx-131',data:'2026-09-18',tipo:'despesa',descricao:'Pix Crédito',categoria:'Crédito',subcategoria:'Pix crédito 📲',conta:'Nubank',forma:'Nubank - Crédito',valor:90.24,status:'pago'},
+            {id:'tx-132',data:'2026-09-21',tipo:'despesa',descricao:'Dinheiro emprestado',categoria:'Financeiro',subcategoria:'Empréstimos 💰',conta:'Itaú',forma:'Itaú - Pix',valor:100.0,status:'pago'},
+            {id:'tx-133',data:'2026-09-22',tipo:'despesa',descricao:'Carolinas de chocolate',categoria:'Alimentação',subcategoria:'Doces 🍫',conta:'Itaú',forma:'Itaú - Crédito',valor:6.31,status:'pago'},
+            {id:'tx-134',data:'2026-09-22',tipo:'receita',descricao:'Uber — lucro líquido',categoria:'Renda extra',subcategoria:'Uber — lucro líquido 🚕',conta:'Uber',forma:'Pix',valor:41.02,status:'pago'},
+            {id:'tx-135',data:'2026-09-22',tipo:'despesa',descricao:'Etanol - 3,90L',categoria:'Carro',subcategoria:'Combustível ⛽',conta:'Itaú',forma:'Itaú - Crédito',valor:50.0,status:'pago'},
+            {id:'tx-136',data:'2026-09-22',tipo:'despesa',descricao:'Pão',categoria:'Alimentação',subcategoria:'Padaria 🥖',conta:'Itaú',forma:'Itaú - Crédito',valor:2.98,status:'pago'},
+            {id:'tx-137',data:'2026-09-22',tipo:'receita',descricao:'Reembolso do pão',categoria:'Reembolso',subcategoria:'Reembolso geral 🔄',conta:'Itaú',forma:'Pix',valor:3.0,status:'pago'},
+            {id:'tx-138',data:'2026-09-23',tipo:'receita',descricao:'Uber — lucro líquido',categoria:'Renda extra',subcategoria:'Uber — lucro líquido 🚕',conta:'Uber',forma:'Pix',valor:45.17,status:'pago'},
+            {id:'tx-139',data:'2026-10-06',tipo:'despesa',descricao:'Docinho de morango',categoria:'Alimentação',subcategoria:'Doces 🍫',conta:'Itaú',forma:'Itaú - Pix',valor:5.0,status:'pago'},
+            {id:'tx-140',data:'2026-09-24',tipo:'despesa',descricao:'Kit de chave relojeiro',categoria:'Eletrônicos',subcategoria:'Acessórios 🎧',conta:'Amazon',forma:'Amazon - Crédito',valor:10.26,status:'pago'},
+            {id:'tx-141',data:'2026-10-06',tipo:'despesa',descricao:'Bolinho de chocolate',categoria:'Alimentação',subcategoria:'Doces 🍫',conta:'Itaú',forma:'Itaú - Pix',valor:10.0,status:'pago'},
+            {id:'tx-142',data:'2026-09-24',tipo:'receita',descricao:'Uber — lucro líquido',categoria:'Renda extra',subcategoria:'Uber — lucro líquido 🚕',conta:'Uber',forma:'Pix',valor:68.04,status:'pago'},
+            {id:'tx-143',data:'2026-09-25',tipo:'despesa',descricao:'Marmita',categoria:'Alimentação',subcategoria:'Restaurantes / Lanches 🍔',conta:'Itaú',forma:'Itaú - Crédito',valor:18.59,status:'pago'},
+            {id:'tx-144',data:'2026-10-06',tipo:'despesa',descricao:'Doce de ninho',categoria:'Alimentação',subcategoria:'Doces 🍫',conta:'Itaú',forma:'Itaú - Pix',valor:10.0,status:'pago'},
+            {id:'tx-145',data:'2026-09-26',tipo:'despesa',descricao:'Taxa de transferência instantanêa',categoria:'Financeiro',subcategoria:'Tarifas bancárias 💸',conta:'Itaú',forma:'Itaú - Débito',valor:4.5,status:'pago'},
+            {id:'tx-146',data:'2026-09-27',tipo:'despesa',descricao:'Carne para churrasco',categoria:'Lazer',subcategoria:'Confraternização 🍽️',conta:'Itaú',forma:'Itaú - Crédito',valor:24.32,status:'pago'},
+            {id:'tx-147',data:'2026-09-27',tipo:'despesa',descricao:'Bebida',categoria:'Lazer',subcategoria:'Bebidas / drinks 🍻',conta:'Itaú',forma:'Itaú - Crédito',valor:6.95,status:'pago'},
+            {id:'tx-148',data:'2026-10-06',tipo:'despesa',descricao:'Brigadeiro Gourmet (Isa)',categoria:'Alimentação',subcategoria:'Doces 🍫',conta:'Itaú',forma:'Itaú - Pix',valor:9.0,status:'pago'},
+            {id:'tx-149',data:'2026-09-29',tipo:'receita',descricao:'Uber — lucro líquido',categoria:'Renda extra',subcategoria:'Uber — lucro líquido 🚕',conta:'Uber',forma:'Pix',valor:50.9,status:'pago'},
+            {id:'tx-150',data:'2026-10-06',tipo:'despesa',descricao:'Trufa',categoria:'Alimentação',subcategoria:'Doces 🍫',conta:'Itaú',forma:'Itaú - Pix',valor:18.0,status:'pago'},
+            {id:'tx-151',data:'2026-09-30',tipo:'receita',descricao:'Uber — lucro líquido',categoria:'Renda extra',subcategoria:'Uber — lucro líquido 🚕',conta:'Uber',forma:'Pix',valor:49.18,status:'pago'},
+            {id:'tx-152',data:'2026-10-01',tipo:'despesa',descricao:'Lanche KFC',categoria:'Alimentação',subcategoria:'Restaurantes / Lanches 🍔',conta:'Itaú',forma:'Itaú - Crédito',valor:24.9,status:'pago'},
+            {id:'tx-153',data:'2026-10-01',tipo:'despesa',descricao:'Casquinha ovomaltine',categoria:'Alimentação',subcategoria:'Doces 🍫',conta:'Itaú',forma:'Itaú - Crédito',valor:5.0,status:'pago'},
+            {id:'tx-154',data:'2026-10-02',tipo:'despesa',descricao:'Méqui colosso',categoria:'Alimentação',subcategoria:'Doces 🍫',conta:'Itaú',forma:'Itaú - Crédito',valor:6.0,status:'pago'},
+            {id:'tx-155',data:'2026-10-06',tipo:'receita',descricao:'Uber — lucro líquido',categoria:'Renda extra',subcategoria:'Uber — lucro líquido 🚕',conta:'Uber',forma:'Pix',valor:37.79,status:'pago'},
+            {id:'tx-156',data:'2026-10-06',tipo:'despesa',descricao:'Aniversariante do mês (Grazi e Ana Crisrina)',categoria:'Presentes',subcategoria:'Amigos 🎁',conta:'Itaú',forma:'Itaú - Pix',valor:20.0,status:'pago'},
+            {id:'tx-157',data:'2026-10-05',tipo:'receita',descricao:'Salário mensal',categoria:'Salário',subcategoria:'Salário mensal 💰',conta:'Itaú',forma:'Transferência bancária',valor:2510.0,status:'pago'},
+            {id:'tx-158',data:'2026-10-07',tipo:'receita',descricao:'Vale alimentação',categoria:'Benefícios',subcategoria:'Vale alimentação 🛒',conta:'Itaú',forma:'Pix',valor:682.0,status:'pago'},
+            {id:'tx-159',data:'2026-10-07',tipo:'despesa',descricao:'Barra de chocolate',categoria:'Alimentação',subcategoria:'Doces 🍫',conta:'Itaú',forma:'Itaú - Crédito',valor:9.9,status:'pago'},
+            {id:'tx-160',data:'2026-10-07',tipo:'receita',descricao:'Uber — lucro líquido',categoria:'Renda extra',subcategoria:'Uber — lucro líquido 🚕',conta:'Uber',forma:'Pix',valor:49.28,status:'pago'},
+            {id:'tx-161',data:'2026-10-07',tipo:'despesa',descricao:'Mel',categoria:'Família',subcategoria:'Presentes 🎁',conta:'Itaú',forma:'Itaú - Pix',valor:50.0,status:'pago'},
+            {id:'tx-162',data:'2026-10-08',tipo:'despesa',descricao:'Spotify',categoria:'Serviços',subcategoria:'Assinaturas 🔗',conta:'Itaú',forma:'Itaú - Pix',valor:10.0,status:'pago'},
+            {id:'tx-163',data:'2026-10-08',tipo:'receita',descricao:'Uber — lucro líquido',categoria:'Renda extra',subcategoria:'Uber — lucro líquido 🚕',conta:'Uber',forma:'Pix',valor:51.03,status:'pago'},
+            {id:'tx-164',data:'2026-10-09',tipo:'receita',descricao:'Uber — lucro líquido',categoria:'Renda extra',subcategoria:'Uber — lucro líquido 🚕',conta:'Uber',forma:'Pix',valor:44.21,status:'pago'},
+            {id:'tx-165',data:'2026-10-10',tipo:'despesa',descricao:'Vivo Ultra (fixa e móvel)',categoria:'Moradia',subcategoria:'Internet e telefone 🌐',conta:'Itaú',forma:'Itaú - Crédito',valor:160.0,status:'pago'},
+            {id:'tx-166',data:'2026-10-10',tipo:'despesa',descricao:'Condominio',categoria:'Moradia',subcategoria:'Condomínio 🔒',conta:'Itaú',forma:'Itaú - Crédito',valor:298.12,status:'pago'},
+            {id:'tx-167',data:'2026-10-14',tipo:'despesa',descricao:'Icloud',categoria:'Serviços',subcategoria:'Serviços de nuvem ☁️',conta:'Itaú',forma:'Itaú - Crédito',valor:5.9,status:'pago'},
+            {id:'tx-168',data:'2026-10-19',tipo:'receita',descricao:'Uber — lucro líquido',categoria:'Renda extra',subcategoria:'Uber — lucro líquido 🚕',conta:'Uber',forma:'Pix',valor:26.86,status:'pago'},
+            {id:'tx-169',data:'2026-10-20',tipo:'receita',descricao:'Uber — lucro líquido',categoria:'Renda extra',subcategoria:'Uber — lucro líquido 🚕',conta:'Uber',forma:'Pix',valor:44.34,status:'pago'}
         ];
 
         // Estado Global
@@ -801,31 +791,26 @@
         let charts = {};
 
         function loadState() {
-            const savedTx = localStorage.getItem('financaspro_tx_v3');
-            const savedUber = localStorage.getItem('financaspro_uber_v3');
+            const savedTx = localStorage.getItem('financaspro_tx_v4');
+            const savedUber = localStorage.getItem('financaspro_uber_v4');
             if (savedTx) {
                 transactions = JSON.parse(savedTx);
             } else {
-                transactions = rawTransactions.map((t, idx) => ({
-                    id: 'tx-' + (idx + 1),
-                    ...t,
-                    subcategoria: t.subcategoria || inferSubcategory(t.categoria, t.descricao, t.tipo),
-                    forma: t.forma || (t.conta + ' - Crédito')
-                }));
-                localStorage.setItem('financaspro_tx_v3', JSON.stringify(transactions));
+                transactions = [...defaultTransactions];
+                localStorage.setItem('financaspro_tx_v4', JSON.stringify(transactions));
             }
             if (savedUber) {
                 uberShifts = JSON.parse(savedUber);
             } else {
                 uberShifts = [...defaultUberShifts];
-                localStorage.setItem('financaspro_uber_v3', JSON.stringify(uberShifts));
+                localStorage.setItem('financaspro_uber_v4', JSON.stringify(uberShifts));
             }
         }
 
         function resetDefaultData() {
-            if (confirm('Deseja restaurar os 169 lançamentos e 18 turnos Uber originais?')) {
-                localStorage.removeItem('financaspro_tx_v3');
-                localStorage.removeItem('financaspro_uber_v3');
+            if (confirm('Deseja restaurar os 169 lançamentos (com as categorias da planilha New Categorias) e os 18 turnos Uber originais?')) {
+                localStorage.removeItem('financaspro_tx_v4');
+                localStorage.removeItem('financaspro_uber_v4');
                 loadState();
                 populateFilterDropdowns();
                 refreshAllViews();
@@ -860,7 +845,7 @@
             } else if (tabId === 'transactions') {
                 activeNav.className = 'nav-item flex items-center justify-between px-4 py-3 rounded-xl text-sm font-bold bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 transition-all';
                 document.getElementById('pageTitle').textContent = 'Lançamentos Financeiros';
-                document.getElementById('pageSubtitle').textContent = 'Controle detalhado por Categoria e Subcategoria';
+                document.getElementById('pageSubtitle').textContent = 'Categorias e Subcategorias integradas da planilha New Categorias';
             } else {
                 activeNav.className = 'nav-item flex items-center justify-between px-4 py-3 rounded-xl text-sm font-bold bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 transition-all';
                 document.getElementById('pageTitle').textContent = 'Dashboard Geral';
@@ -902,7 +887,6 @@
             document.getElementById('dash-uber').textContent = fmtBRL(uberNet);
             document.getElementById('dash-uber-sub').textContent = `${periodUber.length} turnos realizados`;
 
-            // Gráfico 1: Fluxo de Caixa por Mês
             const months = ['2026-08', '2026-09', '2026-10', '2026-11', '2026-12'];
             const monthLabels = ['Ago/26', 'Set/26', 'Out/26', 'Nov/26', 'Dez/26'];
             const recByM = months.map(m => transactions.filter(t => t.data.startsWith(m) && t.tipo === 'receita').reduce((a, b) => a + b.valor, 0));
@@ -921,7 +905,6 @@
                 options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'top' } } }
             });
 
-            // Gráfico 2: Despesas por Categoria
             const catTotals = {};
             periodTx.filter(t => t.tipo === 'despesa').forEach(t => {
                 catTotals[t.categoria] = (catTotals[t.categoria] || 0) + t.valor;
@@ -942,7 +925,6 @@
                 options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right', labels: { boxWidth: 10, font: { size: 10 } } } } }
             });
 
-            // Motor Preditivo 30/60/90 dias
             const predMonths = [
                 { key: '2026-11', label: '30 Dias (Nov/2026)' },
                 { key: '2026-12', label: '60 Dias (Dez/2026)' },
@@ -956,8 +938,8 @@
             predMonths.forEach(pm => {
                 const pendings = transactions.filter(t => t.data.startsWith(pm.key) && t.tipo === 'despesa');
                 const totalPend = pendings.reduce((a, b) => a + b.valor, 0);
-                const estIncome = 3445.50; // Salário + VA + Média Uber
-                const FixedCosts = 486.62; // Condomínio + Luz + Internet
+                const estIncome = 3445.50;
+                const FixedCosts = 486.62;
                 runningBalance += (estIncome - totalPend - FixedCosts);
                 projBalances.push(runningBalance);
 
@@ -991,12 +973,14 @@
         }
 
         // ============================================================================
-        // 5. RENDERIZAÇÃO DA ABA LANÇAMENTOS
+        // 5. RENDERIZAÇÃO DA ABA LANÇAMENTOS (COM BOTÃO DE EDITAR)
         // ============================================================================
         function populateFilterDropdowns() {
             const catFilter = document.getElementById('txCategoryFilter');
             const accFilter = document.getElementById('txAccountFilter');
-            const allCats = [...new Set(transactions.map(t => t.categoria))].sort();
+            const expenseCats = Object.keys(expenseCategoriesMap);
+            const incomeCats = Object.keys(incomeCategoriesMap).filter(c => !expenseCats.includes(c));
+            const allCats = [...expenseCats, ...incomeCats];
             const allAccs = [...new Set(transactions.map(t => t.conta))].sort();
 
             catFilter.innerHTML = '<option value="all">Todas as Categorias</option>' + allCats.map(c => `<option value="${c}">${c}</option>`).join('');
@@ -1009,7 +993,9 @@
             const subFilter = document.getElementById('txSubcategoryFilter');
             let subs = [];
             if (cat === 'all') {
-                subs = [...new Set(transactions.map(t => t.subcategoria))].sort();
+                const allExpSubs = Object.values(expenseCategoriesMap).flat();
+                const allIncSubs = Object.values(incomeCategoriesMap).flat();
+                subs = [...new Set([...allExpSubs, ...allIncSubs])];
             } else {
                 subs = expenseCategoriesMap[cat] || incomeCategoriesMap[cat] || [];
             }
@@ -1044,7 +1030,7 @@
                 if (cat !== 'all' && t.categoria !== cat) return false;
                 if (sub !== 'all' && t.subcategoria !== sub) return false;
                 if (acc !== 'all' && t.conta !== acc) return false;
-                if (search && !t.descricao.toLowerCase().includes(search) && !(t.subcategoria || '').toLowerCase().includes(search)) return false;
+                if (search && !t.descricao.toLowerCase().includes(search) && !(t.subcategoria || '').toLowerCase().includes(search) && !(t.categoria || '').toLowerCase().includes(search)) return false;
                 return true;
             }).sort((a, b) => b.data.localeCompare(a.data));
 
@@ -1062,7 +1048,12 @@
                                 <span class="text-[10px] text-slate-400">${t.categoria}</span>
                             </div>
                         </td>
-                        <td class="px-4 py-3 text-slate-500">${t.conta}</td>
+                        <td class="px-4 py-3">
+                            <div class="flex flex-col">
+                                <span class="text-[11px] font-medium text-slate-600 dark:text-slate-300">${t.conta}</span>
+                                <span class="text-[10px] text-slate-400">${t.forma || t.conta}</span>
+                            </div>
+                        </td>
                         <td class="px-4 py-3 text-right font-extrabold ${isInc ? 'text-emerald-500' : 'text-rose-500'}">
                             ${isInc ? '+' : '-'}${fmtBRL(t.valor)}
                         </td>
@@ -1072,7 +1063,14 @@
                             </button>
                         </td>
                         <td class="px-4 py-3 text-center">
-                            <button onclick="deleteTx('${t.id}')" class="text-slate-400 hover:text-rose-500 p-1"><i class="fa-regular fa-trash-can"></i></button>
+                            <div class="flex items-center justify-center gap-1.5">
+                                <button onclick="openEditTransactionModal('${t.id}')" title="Editar lançamento" class="w-7 h-7 rounded-lg bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 hover:bg-blue-100 flex items-center justify-center transition-colors">
+                                    <i class="fa-solid fa-pen-to-square text-xs"></i>
+                                </button>
+                                <button onclick="deleteTx('${t.id}')" title="Excluir lançamento" class="w-7 h-7 rounded-lg bg-rose-50 dark:bg-rose-900/20 text-rose-500 hover:bg-rose-100 flex items-center justify-center transition-colors">
+                                    <i class="fa-regular fa-trash-can text-xs"></i>
+                                </button>
+                            </div>
                         </td>
                     </tr>
                 `;
@@ -1083,15 +1081,17 @@
             const tx = transactions.find(t => t.id === id);
             if (tx) {
                 tx.status = tx.status === 'pago' ? 'pendente' : 'pago';
-                localStorage.setItem('financaspro_tx_v3', JSON.stringify(transactions));
+                localStorage.setItem('financaspro_tx_v4', JSON.stringify(transactions));
                 refreshAllViews();
             }
         }
 
         function deleteTx(id) {
-            transactions = transactions.filter(t => t.id !== id);
-            localStorage.setItem('financaspro_tx_v3', JSON.stringify(transactions));
-            refreshAllViews();
+            if (confirm('Deseja realmente excluir este lançamento?')) {
+                transactions = transactions.filter(t => t.id !== id);
+                localStorage.setItem('financaspro_tx_v4', JSON.stringify(transactions));
+                refreshAllViews();
+            }
         }
 
         // ============================================================================
@@ -1154,7 +1154,6 @@
             document.getElementById('uber-kpi-viagens').textContent = `${viagens} viagens | ${fmtBRL(rKm)} líq/km`;
             document.getElementById('uberTableSubtitle').textContent = `${list.length} turnos exibidos`;
 
-            // Gráficos Uber
             if (charts.uberShifts) charts.uberShifts.destroy();
             charts.uberShifts = new Chart(document.getElementById('uberShiftsChart'), {
                 type: 'bar',
@@ -1184,11 +1183,42 @@
         }
 
         // ============================================================================
-        // 7. MODAIS E CADASTROS (CATEGORIA + SUBCATEGORIA DA PLANILHA)
+        // 7. MODAIS: CRIAR E EDITAR LANÇAMENTOS (COM NEW CATEGORIAS)
         // ============================================================================
         function openTransactionModal() {
-            document.getElementById('txData').value = '2026-10-25';
+            document.getElementById('editingTxId').value = '';
+            document.getElementById('transactionModalTitle').textContent = 'Novo Lançamento Financeiro';
+            document.getElementById('txSubmitBtn').textContent = 'Salvar Lançamento';
+            document.getElementById('transactionForm').reset();
+            document.getElementById('txData').value = '2026-10-26';
             setModalTxType('despesa');
+            document.getElementById('transactionModal').classList.remove('hidden');
+        }
+
+        function openEditTransactionModal(id) {
+            const tx = transactions.find(t => t.id === id);
+            if (!tx) return;
+
+            document.getElementById('editingTxId').value = tx.id;
+            document.getElementById('transactionModalTitle').textContent = 'Editar Lançamento';
+            document.getElementById('txSubmitBtn').textContent = 'Salvar Alterações';
+
+            setModalTxType(tx.tipo);
+            document.getElementById('txValor').value = tx.valor;
+            document.getElementById('txData').value = tx.data;
+            document.getElementById('txDescricao').value = tx.descricao;
+
+            const catSelect = document.getElementById('categoriaSelect');
+            catSelect.value = tx.categoria;
+            updateSubcategories();
+
+            const subSelect = document.getElementById('subcategoriaSelect');
+            subSelect.value = tx.subcategoria;
+
+            document.getElementById('txConta').value = tx.conta || 'Itaú';
+            document.getElementById('txForma').value = tx.forma || 'Itaú - Crédito';
+            document.getElementById('txStatus').value = tx.status || 'pago';
+
             document.getElementById('transactionModal').classList.remove('hidden');
         }
 
@@ -1219,8 +1249,8 @@
 
         function saveTransaction(e) {
             e.preventDefault();
-            const newTx = {
-                id: 'tx-' + Date.now(),
+            const editingId = document.getElementById('editingTxId').value;
+            const payload = {
                 data: document.getElementById('txData').value,
                 tipo: modalTxType,
                 descricao: document.getElementById('txDescricao').value,
@@ -1231,8 +1261,17 @@
                 valor: parseFloat(document.getElementById('txValor').value),
                 status: document.getElementById('txStatus').value
             };
-            transactions.unshift(newTx);
-            localStorage.setItem('financaspro_tx_v3', JSON.stringify(transactions));
+
+            if (editingId) {
+                const index = transactions.findIndex(t => t.id === editingId);
+                if (index !== -1) {
+                    transactions[index] = { ...transactions[index], ...payload };
+                }
+            } else {
+                transactions.unshift({ id: 'tx-' + Date.now(), ...payload });
+            }
+
+            localStorage.setItem('financaspro_tx_v4', JSON.stringify(transactions));
             closeModal('transactionModal');
             document.getElementById('transactionForm').reset();
             populateFilterDropdowns();
@@ -1240,7 +1279,7 @@
         }
 
         function openUberModal() {
-            document.getElementById('ubData').value = '2026-10-25';
+            document.getElementById('ubData').value = '2026-10-26';
             document.getElementById('uberModal').classList.remove('hidden');
         }
 
@@ -1266,7 +1305,7 @@
                 liquido: parseFloat(liquido.toFixed(2))
             };
             uberShifts.push(shift);
-            localStorage.setItem('financaspro_uber_v3', JSON.stringify(uberShifts));
+            localStorage.setItem('financaspro_uber_v4', JSON.stringify(uberShifts));
             closeModal('uberModal');
             refreshAllViews();
         }
@@ -1275,8 +1314,8 @@
         function toggleSidebar() { document.getElementById('sidebar').classList.toggle('-translate-x-full'); }
 
         function exportCSV() {
-            const headers = ['Data', 'Tipo', 'Descricao', 'Categoria', 'Subcategoria', 'Conta', 'Valor', 'Status'];
-            const rows = transactions.map(t => [t.data, t.tipo, `"${t.descricao}"`, t.categoria, `"${t.subcategoria}"`, t.conta, t.valor, t.status]);
+            const headers = ['Data', 'Tipo', 'Descricao', 'Categoria', 'Subcategoria', 'Conta', 'Forma', 'Valor', 'Status'];
+            const rows = transactions.map(t => [t.data, t.tipo, `"${t.descricao}"`, t.categoria, `"${t.subcategoria}"`, t.conta, `"${t.forma || ''}"`, t.valor, t.status]);
             const csv = [headers.join(';'), ...rows.map(r => r.join(';'))].join('\n');
             const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
             const a = document.createElement('a');
@@ -1285,7 +1324,6 @@
             a.click();
         }
 
-        // Tema Claro por Padrão + Alternância
         document.getElementById('themeToggle').addEventListener('click', () => {
             document.documentElement.classList.toggle('dark');
             const isDark = document.documentElement.classList.contains('dark');
